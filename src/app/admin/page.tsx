@@ -34,8 +34,8 @@ export default function AdminDashboard() {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      // 1. Fetch Pendings (Adding a random param disables Next.js aggressive caching)
-      const appRes = await fetch(`/api/admin/applications?t=${Date.now()}`);
+      // 1. Fetch Pendings (Now correctly pointing to /api/admins)
+      const appRes = await fetch(`/api/admins/applications?t=${Date.now()}`);
       const appData = await appRes.json();
       if (appData.success) setApplications(appData.applications);
 
@@ -57,7 +57,8 @@ export default function AdminDashboard() {
     if (!fee) return alert("Please enter a monthly fee for this student.");
     setApprovingId(id);
     try {
-      const res = await fetch("/api/admin/applications", {
+      // Correctly pointing to /api/admins
+      const res = await fetch("/api/admins/applications", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, monthlyFee: fee }),
       });
       const data = await res.json();
@@ -75,7 +76,8 @@ export default function AdminDashboard() {
     e.preventDefault();
     setAddingManual(true);
     try {
-      const res = await fetch("/api/admin/manual-add", {
+      // Correctly pointing to /api/admins
+      const res = await fetch("/api/admins/manual-add", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(manualForm),
       });
       const data = await res.json();
