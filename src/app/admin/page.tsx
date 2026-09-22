@@ -1,302 +1,191 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Check, AlertCircle, Calendar, IndianRupee, Smartphone, Settings2, Bell, Loader2, Send } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { Loader2, ChevronDown, CheckCircle, User, Phone, MapPin, FileText, Calendar, ShieldCheck, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-interface Student {
-  id: string;
-  name: string;
-  room: string;
-  phone: string;
-  admission_date: string;
-  deposit_eligibility_date: string;
-  monthly_fee: number;
-  fee_paid_this_month: boolean;
-  last_sms_sent_at: string | null;
-}
-
-const easeCurve = [0.22, 1, 0.36, 1] as const;
-
-export default function AdminPage() {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [reminderDaysPrior, setReminderDaysPrior] = useState<number>(3);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSendingSMS, setIsSendingSMS] = useState(false);
-
-  // Form State
-  const [name, setName] = useState("");
-  const [room, setRoom] = useState("");
-  const [phone, setPhone] = useState("");
-  const [admissionDate, setAdmissionDate] = useState("");
-  const [monthlyFee, setMonthlyFee] = useState("");
-
-  const fetchStudents = async () => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('students')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      if (data) setStudents(data as Student[]);
-      
-      const savedReminder = localStorage.getItem("lakshya_settings_reminder");
-      if (savedReminder) setReminderDaysPrior(Number(savedReminder));
-    } catch (error) {
-      console.error("Error fetching students:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+export default function AdminDashboard() {
+  const [applications, setApplications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [fees, setFees] = useState<Record<string, string>>({});
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    fetchStudents();
+    fetchApplications();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("lakshya_settings_reminder", reminderDaysPrior.toString());
-  }, [reminderDaysPrior]);
-
-  const calculateDepositDate = (dateString: string) => {
-    const date = new Date(dateString);
-    date.setMonth(date.getMonth() + 9);
-    return date.toISOString().split('T')[0];
-  };
-
-  const getNextDueDate = (admissionDate: string) => {
-    const today = new Date();
-    const adDate = new Date(admissionDate);
-    let nextDue = new Date(today.getFullYear(), today.getMonth(), adDate.getDate());
-    if (nextDue < today) nextDue.setMonth(nextDue.getMonth() + 1);
-    return nextDue;
-  };
-
-  const isReminderDue = (student: Student) => {
-    if (student.fee_paid_this_month) return false;
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const dueDate = getNextDueDate(student.admission_date); dueDate.setHours(0, 0, 0, 0);
-    const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    return diffDays <= reminderDaysPrior;
-  };
-
-  // Add to Supabase
-  const handleAddStudent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name || !room || !phone || !admissionDate || !monthlyFee) return;
-
-    const newStudent = {
-      name, 
-      room, 
-      phone, 
-      admission_date: admissionDate,
-      deposit_eligibility_date: calculateDepositDate(admissionDate),
-      monthly_fee: Number(monthlyFee),
-      fee_paid_this_month: false,
-      last_sms_sent_at: null
-    };
-
+  const fetchApplications = async () => {
     try {
-      const { data, error } = await supabase.from('students').insert([newStudent]).select().single();
-      if (error) throw error;
-      if (data) {
-        setStudents([data as Student, ...students]);
-        setName(""); setRoom(""); setPhone(""); setAdmissionDate(""); setMonthlyFee("");
+      const res = await fetch("/api/admin/applications");
+      const data = await res.json();
+      if (data.success) {
+        setApplications(data.applications);
       }
     } catch (error) {
-      console.error("Error adding student:", error);
-      alert("Failed to add student. Check database connection.");
+      console.error("Error fetching applications", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Update Status in Supabase
-  const toggleFeeStatus = async (id: string, currentStatus: boolean) => {
-    try {
-      await supabase.from('students').update({ fee_paid_this_month: !currentStatus }).eq('id', id);
-      setStudents(students.map(s => s.id === id ? { ...s, fee_paid_this_month: !currentStatus } : s));
-    } catch (error) {
-      console.error("Error updating status:", error);
-    }
-  };
+  const handleApprove = async (id: string) => {
+    const fee = fees[id];
+    if (!fee) return alert("Please enter a monthly fee for this student.");
 
-  // Delete from Supabase
-  const deleteStudent = async (id: string) => {
+    setApprovingId(id);
     try {
-      await supabase.from('students').delete().eq('id', id);
-      setStudents(students.filter(s => s.id !== id));
-    } catch (error) {
-      console.error("Error deleting student:", error);
-    }
-  };
-
-  // Trigger the API Route to send SMS via Android Phone
-  const triggerAutoReminders = async () => {
-    if (!confirm("This will silently dispatch SMS reminders from the gateway phone. Proceed?")) return;
-    
-    setIsSendingSMS(true);
-    try {
-      const res = await fetch("/api/send-reminders", { method: "POST" });
+      const res = await fetch("/api/admin/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, monthlyFee: fee }),
+      });
       const data = await res.json();
-      alert(data.message);
-      fetchStudents(); // Refresh to show new timestamps
+      
+      if (data.success) {
+        // Remove the approved student from the pending list UI
+        setApplications(apps => apps.filter(app => app.id !== id));
+        setExpandedId(null);
+      } else {
+        alert(data.error);
+      }
     } catch (error) {
-      alert("Failed to connect to the SMS server.");
+      console.error(error);
+    } finally {
+      setApprovingId(null);
     }
-    setIsSendingSMS(false);
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#F9F9F8] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-zinc-900" />
-      </div>
-    );
+  const handleLogout = () => {
+    localStorage.removeItem("userEmail");
+    router.push("/");
+  };
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
   }
 
   return (
-    <div className="min-h-screen bg-[#F9F9F8] text-zinc-950 pt-32 pb-32">
-      <div className="max-w-7xl mx-auto px-6">
-        
-        {/* Header & Global Controls */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
-          <div>
-            <span className="text-[10px] font-bold tracking-[0.2em] text-zinc-500 uppercase mb-4 block">
-              Supabase Admin // Rate Protected
-            </span>
-            <h1 className="text-4xl md:text-6xl font-light tracking-tighter text-zinc-950 leading-[1.1]">
-              Resident <span className="text-zinc-400">Ledger.</span>
-            </h1>
-          </div>
+    <div className="min-h-screen bg-slate-50 pb-20">
+      {/* Admin Header */}
+      <div className="bg-slate-900 text-white px-6 py-8 md:px-12 flex justify-between items-center shadow-lg">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Master Admin</h1>
+          <p className="text-slate-400 text-sm mt-1">Lakshya PG Management System</p>
+        </div>
+        <button onClick={handleLogout} className="flex items-center gap-2 text-sm font-semibold bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-colors">
+          <LogOut className="w-4 h-4" /> Logout
+        </button>
+      </div>
 
-          <div className="flex flex-wrap items-center gap-4">
-            {/* Auto-Flag Setting */}
-            <div className="bg-white p-3 rounded-2xl border shadow-sm flex items-center gap-3">
-              <Settings2 className="w-4 h-4 text-zinc-400" />
-              <div className="flex items-center gap-2">
-                <input type="number" value={reminderDaysPrior} onChange={(e) => setReminderDaysPrior(Number(e.target.value))} className="w-12 bg-zinc-50 border rounded-lg px-2 py-1 text-xs text-center" min="0" max="15" />
-                <span className="text-xs font-medium text-zinc-500">days prior</span>
-              </div>
-            </div>
-
-            {/* Safety Monitor Badge */}
-            <div className="bg-white border border-zinc-200 px-5 py-3 rounded-2xl shadow-sm">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block">SIM Daily Quota</span>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-sm font-semibold text-zinc-900">
-                  {students.filter(s => s.last_sms_sent_at && new Date(s.last_sms_sent_at).toDateString() === new Date().toDateString()).length} / 85
-                </span>
-                <span className="text-[11px] text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded-full">Safe Limit</span>
-              </div>
-            </div>
-
-            {/* Dispatch Button */}
-            <button 
-              onClick={triggerAutoReminders}
-              disabled={isSendingSMS}
-              className="bg-zinc-950 text-white px-6 py-4 rounded-2xl text-sm font-bold tracking-wide flex items-center gap-3 hover:bg-zinc-800 disabled:opacity-50 transition-all shadow-xl shadow-black/10"
-            >
-              {isSendingSMS ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-              {isSendingSMS ? "Pacing Dispatches..." : "Dispatch SMS"}
-            </button>
-          </div>
+      <div className="max-w-5xl mx-auto px-6 mt-10">
+        <div className="flex items-center gap-3 mb-6">
+          <ShieldCheck className="w-6 h-6 text-blue-600" />
+          <h2 className="text-xl font-bold text-slate-900">Pending Approvals ({applications.length})</h2>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-          
-          {/* Onboard Form */}
-          <div className="lg:col-span-4 bg-white p-8 rounded-3xl border shadow-sm sticky top-32">
-            <h2 className="text-xl font-medium tracking-tight mb-6">Onboard New Resident</h2>
-            <form onSubmit={handleAddStudent} className="flex flex-col gap-5">
-              <div>
-                <label className="text-[10px] font-bold tracking-[0.1em] text-zinc-500 uppercase block mb-2">Full Name</label>
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} required className="w-full bg-zinc-50 border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-zinc-950" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] font-bold tracking-[0.1em] text-zinc-500 uppercase block mb-2">Room No.</label>
-                  <input type="text" value={room} onChange={(e) => setRoom(e.target.value)} required className="w-full bg-zinc-50 border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-zinc-950" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold tracking-[0.1em] text-zinc-500 uppercase block mb-2">Monthly Fee (₹)</label>
-                  <input type="number" value={monthlyFee} onChange={(e) => setMonthlyFee(e.target.value)} required className="w-full bg-zinc-50 border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-zinc-950" />
-                </div>
-              </div>
-              <div>
-                <label className="text-[10px] font-bold tracking-[0.1em] text-zinc-500 uppercase block mb-2">Phone Number</label>
-                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required maxLength={10} className="w-full bg-zinc-50 border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-zinc-950" />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold tracking-[0.1em] text-zinc-500 uppercase block mb-2">Date of Admission</label>
-                <input type="date" value={admissionDate} onChange={(e) => setAdmissionDate(e.target.value)} required className="w-full bg-zinc-50 border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-zinc-950" />
-              </div>
-              <button type="submit" className="mt-4 w-full bg-zinc-950 text-white rounded-xl py-4 text-xs font-bold tracking-[0.1em] uppercase hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2">
-                <Plus className="w-4 h-4" /> Save to Database
-              </button>
-            </form>
+        {applications.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
+            <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
+            <h3 className="text-lg font-bold text-slate-900">All caught up!</h3>
+            <p className="text-slate-500">There are no pending student applications at the moment.</p>
           </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            {applications.map((app) => (
+              <div key={app.id} className="border-b border-slate-100 last:border-0">
+                {/* Header (Click to expand) */}
+                <button 
+                  onClick={() => setExpandedId(expandedId === app.id ? null : app.id)}
+                  className="w-full flex items-center justify-between p-6 hover:bg-slate-50 transition-colors text-left"
+                >
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">{app.name}</h3>
+                    <p className="text-sm text-slate-500 flex items-center gap-4 mt-1">
+                      <span>Room: <strong className="text-slate-700">{app.room}</strong></span>
+                      <span>Applied: {new Date(app.created_at).toLocaleDateString()}</span>
+                    </p>
+                  </div>
+                  <motion.div animate={{ rotate: expandedId === app.id ? 180 : 0 }}>
+                    <ChevronDown className="w-6 h-6 text-slate-400" />
+                  </motion.div>
+                </button>
 
-          {/* Roster Database */}
-          <div className="lg:col-span-8 flex flex-col gap-4">
-            {students.length === 0 ? (
-              <div className="w-full h-64 border border-dashed border-zinc-300 rounded-3xl flex flex-col items-center justify-center text-zinc-400">
-                <p className="text-sm font-medium text-zinc-500">Database is empty.</p>
-              </div>
-            ) : (
-              <AnimatePresence>
-                {students.map((student) => {
-                  const reminderDue = isReminderDue(student);
-                  
-                  return (
-                    <motion.div key={student.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.4, ease: easeCurve }}
-                      className={`bg-white border p-6 rounded-3xl shadow-sm flex flex-col gap-6 transition-all ${reminderDue ? "border-red-300 shadow-red-100" : "border-zinc-200"}`}
+                {/* Expanded Content */}
+                <AnimatePresence>
+                  {expandedId === app.id && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }} 
+                      animate={{ height: "auto", opacity: 1 }} 
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden bg-slate-50/50"
                     >
-                      <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-1">
-                            <h3 className="text-xl font-medium">{student.name}</h3>
-                            <span className="bg-zinc-100 text-zinc-700 px-2 py-0.5 rounded text-xs font-bold">Room {student.room}</span>
-                            {reminderDue && <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase flex items-center gap-1 animate-pulse"><Bell className="w-3 h-3" /> Action Required</span>}
-                          </div>
-                          
-                          <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-600 mt-3">
-                            <div className="flex items-center gap-1.5"><IndianRupee className="w-3 h-3" /> ₹{student.monthly_fee}/mo</div>
-                            <div className="flex items-center gap-1.5"><Smartphone className="w-3 h-3" /> +91 {student.phone}</div>
-                            <div className="flex items-center gap-1.5"><Calendar className="w-3 h-3" /> Due: {getNextDueDate(student.admission_date).toLocaleDateString('en-GB')}</div>
+                      <div className="p-6 border-t border-slate-100">
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                          {/* Personal Info */}
+                          <div className="space-y-3">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1"><User className="w-3 h-3"/> Personal Details</h4>
+                            <p className="text-sm"><span className="text-slate-500">Email:</span> <strong className="text-slate-900">{app.email}</strong></p>
+                            <p className="text-sm"><span className="text-slate-500">DOB:</span> <strong className="text-slate-900">{app.dob}</strong></p>
+                            <p className="text-sm"><span className="text-slate-500">Father:</span> <strong className="text-slate-900">{app.father_name}</strong></p>
+                            <p className="text-sm"><span className="text-slate-500">Mother:</span> <strong className="text-slate-900">{app.mother_name}</strong></p>
+                            <p className="text-sm"><span className="text-slate-500">Disease:</span> <strong className="text-slate-900">{app.disease}</strong></p>
                           </div>
 
-                          {/* SMS Tracking Indicator */}
-                          <div className="mt-4">
-                            {student.last_sms_sent_at ? (
-                              <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-1 rounded">
-                                ✓ Last SMS Sent: {new Date(student.last_sms_sent_at).toLocaleString('en-GB')}
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50 px-2 py-1 rounded">
-                                No SMS sent yet
-                              </span>
-                            )}
+                          {/* Contact Info */}
+                          <div className="space-y-3">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1"><Phone className="w-3 h-3"/> Contact & IDs</h4>
+                            <p className="text-sm"><span className="text-slate-500">Phone:</span> <strong className="text-slate-900">{app.phone}</strong></p>
+                            <p className="text-sm"><span className="text-slate-500">Parent Ph:</span> <strong className="text-slate-900">{app.parent_phone}</strong></p>
+                            <p className="text-sm"><span className="text-slate-500">Aadhaar:</span> <strong className="text-slate-900">{app.aadhaar}</strong></p>
+                            <p className="text-sm"><span className="text-slate-500">Coaching:</span> <strong className="text-slate-900">{app.coaching}</strong></p>
+                          </div>
+
+                          {/* Logistics Info */}
+                          <div className="space-y-3">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1"><Calendar className="w-3 h-3"/> Timeline</h4>
+                            <p className="text-sm"><span className="text-slate-500">Admission Date:</span> <strong className="text-slate-900">{app.admission_date}</strong></p>
+                            <p className="text-sm"><span className="text-slate-500">Deposit Date:</span> <strong className="text-slate-900">{app.deposit_eligibility_date}</strong></p>
+                            <div className="mt-2 text-sm">
+                              <span className="text-slate-500 block mb-1">Permanent Address:</span> 
+                              <p className="text-slate-900 bg-white p-2 rounded-lg border border-slate-200">{app.address}</p>
+                            </div>
                           </div>
                         </div>
-                        <button onClick={() => deleteStudent(student.id)} className="text-zinc-400 hover:text-red-600 text-xs underline">Remove</button>
-                      </div>
 
-                      <div className="flex flex-col md:flex-row items-center gap-3 border-t border-zinc-100 pt-4">
-                        <button onClick={() => toggleFeeStatus(student.id, student.fee_paid_this_month)}
-                          className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border ${student.fee_paid_this_month ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-red-50 border-red-200 text-red-600"}`}>
-                          {student.fee_paid_this_month ? <><Check className="w-4 h-4" /> Paid (Cloud Sync)</> : <><AlertCircle className="w-4 h-4" /> Mark Paid</>}
-                        </button>
+                        {/* Approval Action Bar */}
+                        <div className="bg-white p-5 rounded-xl border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
+                          <div className="flex-1 w-full">
+                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 block">Assign Monthly Fee (₹)</label>
+                            <input 
+                              type="number" 
+                              placeholder="e.g. 8500" 
+                              value={fees[app.id] || ""}
+                              onChange={(e) => setFees({ ...fees, [app.id]: e.target.value })}
+                              className="w-full md:max-w-xs p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none text-slate-900 font-bold"
+                            />
+                          </div>
+                          <button 
+                            onClick={() => handleApprove(app.id)}
+                            disabled={approvingId === app.id || !fees[app.id]}
+                            className="w-full md:w-auto bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            {approvingId === app.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Approve & Grant Portal Access <CheckCircle className="w-5 h-5" /></>}
+                          </button>
+                        </div>
+
                       </div>
                     </motion.div>
-                  );
-                })}
-              </AnimatePresence>
-            )}
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
           </div>
-        </div>
-
+        )}
       </div>
     </div>
   );
-} 
+}

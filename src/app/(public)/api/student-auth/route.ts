@@ -17,7 +17,7 @@ export async function POST(req: Request) {
       const { data: student } = await supabase.from("students").select("*").eq("email", email).eq("status", "approved").maybeSingle();
 
       if (!admin && !student) {
-        return NextResponse.json({ success: false, error: "Email not found or application still pending approval." }, { status: 404 });
+        return NextResponse.json({ success: false, error: "Either you are not a part of the hostel or you are not yet approved by the admin." }, { status: 404 });
       }
 
       const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
