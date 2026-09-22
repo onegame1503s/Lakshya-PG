@@ -4,57 +4,20 @@ import { sendBrevoEmail } from "@/lib/brevo";
 
 export async function POST(req: Request) {
   try {
-    const {
-      action,
-      email,
-      name,
-      dob,
-      fatherName,
-      motherName,
-      phone,
-      parentPhone,
-      aadhaar,
-      coaching,
-      address,
-      disease,
-      otp,
-    } = await req.json();
+    const { action, email, name, dob, fatherName, motherName, phone, parentPhone, aadhaar, coaching, address, disease, sharingType, otp } = await req.json();
 
-    // -------------------------------------------------------------
-    // PHASE 1: SEND OTP FOR NEW APPLICATION
-    // -------------------------------------------------------------
     if (action === "send_otp") {
-      const { data: existing } = await supabase
-        .from("students")
-        .select("status")
-        .eq("email", email)
-        .maybeSingle();
+      const { data: existing } = await supabase.from("students").select("status").eq("email", email).maybeSingle();
 
       if (existing && existing.status !== "unverified") {
-        return NextResponse.json(
-          { success: false, error: "This email is already registered or pending approval." },
-          { status: 400 }
-        );
+        return NextResponse.json({ success: false, error: "This email is already registered or pending approval." }, { status: 400 });
       }
 
       const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
       const studentPayload = {
-        name,
-        email,
-        dob,
-        father_name: fatherName,
-        mother_name: motherName,
-        phone,
-        parent_phone: parentPhone,
-        aadhaar,
-        coaching,
-        address,
-        disease,
-        status: "unverified",
-        otp_code: generatedOtp,
-        otp_expires_at: expiresAt,
+        name, email, dob, father_name: fatherName, mother_name: motherName, phone, parent_phone: parentPhone, aadhaar, coaching, address, disease, sharing_type: sharingType || "Double Sharing", status: "unverified", otp_code: generatedOtp, otp_expires_at: expiresAt,
       };
 
       if (existing && existing.status === "unverified") {
@@ -64,53 +27,25 @@ export async function POST(req: Request) {
       }
 
       await sendBrevoEmail({
-        toEmail: email,
-        toName: name,
-        subject: "Verify Your Lakshya PG Application",
-        htmlContent: `<div style="font-family: sans-serif; padding: 20px;"><h2>Hello ${name},</h2><p>Your OTP to verify your Lakshya PG admission application is:</p><h1 style="background: #f4f4f5; padding: 10px 20px; display: inline-block; letter-spacing: 4px;">${generatedOtp}</h1><p>Valid for 10 minutes.</p></div>`,
+        toEmail: email, toName: name, subject: "Verify Your Lakshya PG Application",
+        htmlContent: `<div style="font-family: sans-serif; padding: 20px;"><h2>Hello ${name},</h2><p>Your OTP to verify your application is:</p><h1 style="background: #f4f4f5; padding: 10px 20px; display: inline-block; letter-spacing: 4px;">${generatedOtp}</h1></div>`,
       });
 
       return NextResponse.json({ success: true });
     }
 
-    // -------------------------------------------------------------
-    // PHASE 2: VERIFY OTP AND SUBMIT APPLICATION
-    // -------------------------------------------------------------
     if (action === "verify_otp") {
-      const { data: student } = await supabase
-        .from("students")
-        .select("*")
-        .eq("email", email)
-        .eq("status", "unverified")
-        .maybeSingle();
+      const { data: student } = await supabase.from("students").select("*").eq("email", email).eq("status", "unverified").maybeSingle();
 
-      if (!student) {
-        return NextResponse.json(
-          { success: false, error: "Application record not found." },
-          { status: 404 }
-        );
-      }
+      if (!student) return NextResponse.json({ success: false, error: "Application record not found." }, { status: 404 });
 
       if (student.otp_code === otp && new Date(student.otp_expires_at) > new Date()) {
-        // Mark status as 'pending' so it shows up in Admin's queue
-        await supabase
-          .from("students")
-          .update({
-            status: "pending",
-            otp_code: null,
-            otp_expires_at: null,
-          })
-          .eq("id", student.id);
-
+        await supabase.from("students").update({ status: "pending", otp_code: null, otp_expires_at: null }).eq("id", student.id);
         return NextResponse.json({ success: true });
       } else {
-        return NextResponse.json(
-          { success: false, error: "Invalid or expired OTP." },
-          { status: 400 }
-        );
+        return NextResponse.json({ success: false, error: "Invalid or expired OTP." }, { status: 400 });
       }
     }
-
     return NextResponse.json({ success: false, error: "Invalid action." }, { status: 400 });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

@@ -104,6 +104,13 @@ export default function ApplyPage() {
             <>
               <form id="application-form" onSubmit={handleSendOtp} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
+  <label className="text-sm font-semibold text-slate-700">Room Sharing Preference</label>
+  <select required value={formData.sharingType} onChange={e => setFormData({...formData, sharingType: e.target.value})} className="w-full p-3 border rounded-xl bg-white">
+    <option value="Double Sharing">Double Sharing</option>
+    <option value="Single Sharing">Single Sharing</option>
+  </select>
+</div>
+                <div className="space-y-2">
                   <label className="text-sm font-semibold text-slate-700">Applicant Name</label>
                   <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-3 border rounded-xl" />
                 </div>
