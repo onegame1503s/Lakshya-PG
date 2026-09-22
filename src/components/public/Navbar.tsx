@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { Menu, X, UserCircle, ArrowRight } from "lucide-react";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -53,9 +53,23 @@ export default function Navbar() {
           <Link href="/rooms" className="hover:text-blue-600 transition-colors">Rooms</Link>
           <Link href="/facilities" className="hover:text-blue-600 transition-colors">Facilities</Link>
           <Link href="/locality" className="hover:text-blue-600 transition-colors">Locality</Link>
-          <button className="bg-slate-900 text-white px-6 py-2.5 rounded-full hover:bg-slate-800 transition-all transform hover:scale-105 shadow-md shadow-slate-900/20">
-            Unlock Pricing
-          </button>
+          
+          <div className="flex items-center space-x-6 pl-6 border-l border-slate-200">
+            <Link 
+              href="/student/login" 
+              className="flex items-center gap-1.5 text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors"
+            >
+              <UserCircle className="w-5 h-5" />
+              <span>Login</span>
+            </Link>
+            
+            <Link 
+              href="/apply" 
+              className="bg-slate-900 text-white px-6 py-2.5 rounded-full hover:bg-slate-800 transition-all transform hover:scale-105 shadow-md shadow-slate-900/20 text-sm font-bold flex items-center gap-2"
+            >
+              Apply Now <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
 
         {/* Mobile Toggle */}
@@ -90,7 +104,6 @@ export default function Navbar() {
                 Facilities
               </Link>
 
-              {/* The Missing Locality Link is explicitly added here */}
               <Link 
                 href="/locality" 
                 onClick={() => setMobileMenuOpen(false)}
@@ -99,12 +112,23 @@ export default function Navbar() {
                 Locality
               </Link>
 
-              <button 
+              <div className="h-px bg-slate-100 w-full my-2"></div>
+
+              <Link 
+                href="/student/login" 
                 onClick={() => setMobileMenuOpen(false)}
-                className="bg-blue-600 text-white px-6 py-3 rounded-xl font-medium w-full shadow-lg shadow-blue-600/30 mt-2"
+                className="flex items-center justify-between text-lg font-semibold text-slate-800"
               >
-                Unlock Pricing
-              </button>
+                Portal Login <UserCircle className="w-6 h-6 text-slate-400" />
+              </Link>
+
+              <Link 
+                href="/apply" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="bg-blue-600 text-white px-6 py-3 rounded-xl font-medium w-full shadow-lg shadow-blue-600/30 mt-2 flex items-center justify-center gap-2 text-lg"
+              >
+                Apply for Admission <ArrowRight className="w-5 h-5" />
+              </Link>
             </div>
           </motion.div>
         )}
