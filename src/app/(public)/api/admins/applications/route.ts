@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
+// ABSOLUTELY NO CACHING ALLOWED
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // FETCH all pending applications
 export async function GET() {
   try {
@@ -10,8 +14,22 @@ export async function GET() {
       .eq("status", "pending")
       .order("created_at", { ascending: false });
 
-    if (error) throw error;
-    return NextResponse.json({ success: true, applications: data });
+    if (error) {
+      console.error("SUPABASE ERROR:", error.message);
+      throw error;
+    }
+    
+    // This will print in your VS Code terminal so you can see if the data is arriving!
+    console.log("FOUND PENDING STUDENTS:", data?.length);
+
+    return NextResponse.json({ 
+      success: true, 
+      applications: data 
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
+      }
+    });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
