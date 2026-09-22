@@ -21,7 +21,8 @@ export default function StudentDashboard() {
       }
 
       try {
-        const res = await fetch("/api/student/profile", {
+        // FIXED URL TO MATCH YOUR EXACT FOLDER TREE: /student/profile
+        const res = await fetch("/student/profile", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email }),
