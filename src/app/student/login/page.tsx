@@ -51,9 +51,16 @@ export default function StudentLoginPage() {
 
       if (!res.ok) throw new Error(data.error || "Invalid code");
 
-      // Save student data locally for the session dashboard
-      localStorage.setItem("lakshya_student_session", JSON.stringify(data.student));
-      router.push("/student/dashboard");
+      // Save the email so the dashboards know who is logged in
+      localStorage.setItem("userEmail", email);
+      
+      // SMART ROUTING: Admin goes to /admin, Student goes to /student/dashboard
+      if (data.role === "admin") {
+        router.push("/admin");
+      } else {
+        router.push("/student/dashboard");
+      }
+
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -70,10 +77,10 @@ export default function StudentLoginPage() {
       >
         <div className="mb-8">
           <span className="text-[10px] font-bold tracking-[0.2em] text-zinc-500 uppercase mb-2 block">
-            Student Portal // Free Secure Login
+            Portal // Free Secure Login
           </span>
           <h1 className="text-3xl font-light tracking-tight text-zinc-950">
-            Resident <span className="text-zinc-400">Access.</span>
+            Secure <span className="text-zinc-400">Access.</span>
           </h1>
         </div>
 
