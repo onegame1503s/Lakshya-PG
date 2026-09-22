@@ -17,7 +17,7 @@ interface Student {
   last_sms_sent_at: string | null;
 }
 
-const easeCurve = [0.22, 1, 0.36, 1];
+const easeCurve = [0.22, 1, 0.36, 1] as const;
 
 export default function AdminPage() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -299,4 +299,4 @@ export default function AdminPage() {
       </div>
     </div>
   );
-}
+} 

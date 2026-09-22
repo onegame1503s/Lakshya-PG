@@ -74,7 +74,7 @@ const AMENITIES = [
   }
 ];
 
-const easeCurve = [0.22, 1, 0.36, 1];
+const easeCurve = [0.22, 1, 0.36, 1] as const;
 
 const FacilityBlock = ({ facility, index }: { facility: any; index: number }) => {
   const containerRef = useRef(null);
