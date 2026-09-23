@@ -21,15 +21,16 @@ export async function GET() {
   }
 }
 
-// UPDATE resident fee amount, status, or due date (WITH EMAILS!)
+// UPDATE resident fee, status, due date, OR room number (WITH EMAILS!)
 export async function PATCH(req: Request) {
   try {
-    const { id, monthly_fee, fee_status, rent_due_day, student_email, student_name } = await req.json();
+    const { id, monthly_fee, fee_status, rent_due_day, room, student_email, student_name } = await req.json();
     
     const updates: any = {};
     if (monthly_fee !== undefined) updates.monthly_fee = monthly_fee;
     if (fee_status !== undefined) updates.fee_status = fee_status;
     if (rent_due_day !== undefined) updates.rent_due_day = rent_due_day;
+    if (room !== undefined) updates.room = room;
 
     const { error } = await supabase.from("students").update(updates).eq("id", id);
     if (error) throw error;
@@ -41,7 +42,15 @@ export async function PATCH(req: Request) {
           toEmail: student_email,
           toName: student_name,
           subject: "UPDATE: Your Lakshya PG Monthly Fee",
-          htmlContent: `<div style="padding: 20px; font-family: sans-serif;"><h2>Hello ${student_name},</h2><p>The admin has updated your monthly fee structure.</p><p>Your new monthly fee is: <strong style="font-size: 20px; color: #2563eb;">₹${monthly_fee}</strong></p><p>Please log into your resident dashboard to view the changes.</p></div>`
+          htmlContent: `<div style="padding: 20px; font-family: sans-serif;"><h2>Hello ${student_name},</h2><p>The admin has updated your monthly fee structure.</p><p>Your new monthly fee is: <strong style="font-size: 20px; color: #2563eb;">₹${monthly_fee}</strong></p></div>`
+        });
+      }
+      if (room !== undefined) {
+        await sendBrevoEmail({
+          toEmail: student_email,
+          toName: student_name,
+          subject: "UPDATE: Room Assignment",
+          htmlContent: `<div style="padding: 20px; font-family: sans-serif;"><h2>Hello ${student_name},</h2><p>Your room assignment has been updated.</p><p>You are now assigned to Room: <strong style="font-size: 20px; color: #2563eb;">${room}</strong></p></div>`
         });
       }
       if (rent_due_day !== undefined) {
@@ -49,7 +58,7 @@ export async function PATCH(req: Request) {
           toEmail: student_email,
           toName: student_name,
           subject: "UPDATE: Your Rent Due Date Changed",
-          htmlContent: `<div style="padding: 20px; font-family: sans-serif;"><h2>Hello ${student_name},</h2><p>The admin has updated your rent due date schedule.</p><p>Your rent is now strictly due on the <strong>${rent_due_day}</strong> of every month.</p><p>Please log into your resident dashboard to view the changes.</p></div>`
+          htmlContent: `<div style="padding: 20px; font-family: sans-serif;"><h2>Hello ${student_name},</h2><p>Your rent due date schedule has been updated to the <strong>${rent_due_day}</strong> of every month.</p></div>`
         });
       }
     }
