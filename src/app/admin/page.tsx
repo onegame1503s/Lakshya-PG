@@ -21,14 +21,13 @@ export default function AdminDashboard() {
 
   const router = useRouter();
 
-  // Manual Add Form State (All 9 requested fields - optional/blank allowed)
+  // Manual Add Form State (Strictly matching the 8 requested fields + sharing type)
   const [manualForm, setManualForm] = useState({
     name: "", 
     email: "", 
     phone: "", 
     parent_phone: "", 
     dob: "", 
-    aadhaar: "", 
     room: "", 
     monthly_fee: "8500", 
     address: "",
@@ -130,7 +129,7 @@ export default function AdminDashboard() {
       const data = await res.json();
       if (res.ok && data.success) {
         alert("Student successfully onboarded and saved to database!");
-        setManualForm({ name: "", email: "", phone: "", parent_phone: "", dob: "", aadhaar: "", room: "", monthly_fee: "8500", address: "", sharing_type: "Double Sharing" });
+        setManualForm({ name: "", email: "", phone: "", parent_phone: "", dob: "", room: "", monthly_fee: "8500", address: "", sharing_type: "Double Sharing" });
         fetchData();
         setActiveTab("residents");
       } else {
@@ -231,10 +230,8 @@ export default function AdminDashboard() {
                                     phone: r.phone || "",
                                     parent_phone: r.parent_phone || "",
                                     dob: r.dob || "",
-                                    aadhaar: r.aadhaar || "",
                                     room: r.room || "",
                                     monthly_fee: r.monthly_fee || "",
-                                    sharing_type: r.sharing_type || "Double Sharing",
                                     address: r.address || ""
                                   });
                                 }
@@ -329,10 +326,6 @@ export default function AdminDashboard() {
                                     <input type="text" value={editFormData.dob || ""} onChange={(e) => setEditFormData({...editFormData, dob: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Gov ID</label>
-                                    <input type="text" value={editFormData.aadhaar || ""} onChange={(e) => setEditFormData({...editFormData, aadhaar: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
-                                  </div>
-                                  <div>
                                     <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Room Number</label>
                                     <input type="text" value={editFormData.room || ""} onChange={(e) => setEditFormData({...editFormData, room: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
                                   </div>
@@ -340,11 +333,7 @@ export default function AdminDashboard() {
                                     <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Monthly Fee (₹)</label>
                                     <input type="number" value={editFormData.monthly_fee || ""} onChange={(e) => setEditFormData({...editFormData, monthly_fee: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
                                   </div>
-                                  <div>
-                                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Sharing Type</label>
-                                    <input type="text" value={editFormData.sharing_type || ""} onChange={(e) => setEditFormData({...editFormData, sharing_type: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
-                                  </div>
-                                  <div className="md:col-span-2 lg:col-span-3">
+                                  <div className="md:col-span-2 lg:col-span-2">
                                     <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Permanent Address</label>
                                     <textarea rows={2} value={editFormData.address || ""} onChange={(e) => setEditFormData({...editFormData, address: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
                                   </div>
@@ -401,11 +390,11 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* 3. MANUALLY ADD STUDENT TAB (ALL 9 FIELDS, OPTIONAL BLANK SPACES ALLOWED) */}
+        {/* 3. MANUALLY ADD STUDENT TAB (EXACTLY THE 8 REQUESTED FIELDS + OPTIONAL BLANK SPACES) */}
         {activeTab === "manual" && (
           <div className="bg-white rounded-3xl p-8 shadow-xl border border-slate-100 max-w-3xl mx-auto">
             <h2 className="text-2xl font-bold text-slate-900 mb-2">Manually Add Resident</h2>
-            <p className="text-sm text-slate-500 mb-8">Directly onboard a resident into the system. You can leave non-required spaces blank if needed.</p>
+            <p className="text-sm text-slate-500 mb-8">Directly onboard a resident. You can leave non-required spaces blank if needed.</p>
             
             <form onSubmit={handleManualSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -428,10 +417,6 @@ export default function AdminDashboard() {
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Date of Birth</label>
                   <input type="text" placeholder="DD/MM/YYYY" value={manualForm.dob} onChange={(e) => setManualForm({...manualForm, dob: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Gov ID</label>
-                  <input type="text" placeholder="ID Number" value={manualForm.aadhaar} onChange={(e) => setManualForm({...manualForm, aadhaar: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Room Number</label>
