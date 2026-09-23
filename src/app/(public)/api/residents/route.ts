@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+// FETCH all approved residents
 export async function GET() {
   try {
     const { data, error } = await supabase
@@ -19,6 +20,7 @@ export async function GET() {
   }
 }
 
+// UPDATE resident fee amount OR fee status
 export async function PATCH(req: Request) {
   try {
     const { id, monthly_fee, fee_status } = await req.json();

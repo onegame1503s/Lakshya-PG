@@ -36,31 +36,43 @@ export default function AdminDashboard() {
     fetchAllData();
   }, []);
 
+  // SAFELY FETCH DATA SO ONE CRASH DOES NOT BREAK THE DASHBOARD
   const fetchAllData = async () => {
     setLoading(true);
+
+    // 1. Fetch Pendings
     try {
       const appRes = await fetch(`/api/admins/applications?t=${Date.now()}`);
-      const appData = await appRes.json();
-      if (appData.success) setApplications(appData.applications);
-
-      const resRes = await fetch(`/api/admins/residents?t=${Date.now()}`);
-      const resData = await resRes.json();
-      if (resData.success) {
-        setResidents(resData.residents);
-        const feeMap: Record<string, string> = {};
-        resData.residents.forEach((r: any) => feeMap[r.id] = r.monthly_fee);
-        setEditFees(feeMap);
+      if (appRes.ok) {
+        const appData = await appRes.json();
+        if (appData.success) setApplications(appData.applications);
       }
+    } catch (e) { console.error("Failed to fetch applications:", e); }
 
+    // 2. Fetch Residents
+    try {
+      const resRes = await fetch(`/api/admins/residents?t=${Date.now()}`);
+      if (resRes.ok) {
+        const resData = await resRes.json();
+        if (resData.success) {
+          setResidents(resData.residents);
+          const feeMap: Record<string, string> = {};
+          resData.residents.forEach((r: any) => feeMap[r.id] = r.monthly_fee);
+          setEditFees(feeMap);
+        }
+      }
+    } catch (e) { console.error("Failed to fetch residents:", e); }
+
+    // 3. Fetch Admins
+    try {
       const admRes = await fetch(`/api/admins?t=${Date.now()}`);
-      const admData = await admRes.json();
-      if (Array.isArray(admData)) setAdminList(admData);
+      if (admRes.ok) {
+        const admData = await admRes.json();
+        if (Array.isArray(admData)) setAdminList(admData);
+      }
+    } catch (e) { console.error("Failed to fetch admins:", e); }
 
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+    setLoading(false);
   };
 
   /* --- PENDING ACTIONS --- */
