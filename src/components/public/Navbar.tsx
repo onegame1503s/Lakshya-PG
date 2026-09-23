@@ -55,7 +55,7 @@ export default function Navbar() {
           <Link href="/locality" className="hover:text-blue-600 transition-colors">Locality</Link>
           
           {/* Contact Us Button */}
-          <a href="tel:+91XXXXXXXXXX" className="flex items-center gap-1.5 font-bold text-blue-600 hover:text-blue-700 transition-colors">
+          <a href="tel:+919876543210" className="flex items-center gap-1.5 font-bold text-blue-600 hover:text-blue-700 transition-colors">
             <PhoneCall className="w-4 h-4" />
             Contact Us
           </a>
@@ -120,7 +120,7 @@ export default function Navbar() {
 
               {/* Mobile Contact Us Button */}
               <a 
-                href="tel:+91XXXXXXXXXX" 
+                href="tel:+919876543210" 
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center gap-2 text-lg font-bold text-blue-600"
               >
