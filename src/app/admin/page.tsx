@@ -47,7 +47,6 @@ export default function AdminDashboard() {
       const resData = await resRes.json();
       if (resData.success) {
         setResidents(resData.residents);
-        // Pre-fill edit fees
         const feeMap: Record<string, string> = {};
         resData.residents.forEach((r: any) => feeMap[r.id] = r.monthly_fee);
         setEditFees(feeMap);
@@ -75,7 +74,7 @@ export default function AdminDashboard() {
       });
       const data = await res.json();
       if (data.success) {
-        fetchAllData(); // Refresh all lists
+        fetchAllData(); 
         setExpandedId(null);
       } else alert(data.error);
     } finally {
@@ -105,8 +104,10 @@ export default function AdminDashboard() {
         const res = await fetch("/api/admins/residents", {
           method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, monthly_fee: newFee }),
         });
-        if (res.ok) alert("Fee updated successfully!");
-        fetchAllData();
+        if (res.ok) {
+          alert("Fee updated successfully!");
+          fetchAllData();
+        }
       } finally {
         setUpdatingId(null);
       }
@@ -228,7 +229,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* TAB 4: MANAGE RESIDENTS (NEW TAB) */}
+        {/* TAB 2: MANAGE RESIDENTS */}
         {activeTab === "residents" && (
           <div>
             {residents.length === 0 ? (
@@ -257,8 +258,6 @@ export default function AdminDashboard() {
                       {expandedId === app.id && (
                         <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden bg-slate-50/50">
                           <div className="p-6 border-t border-slate-100">
-                            
-                            {/* All Resident Data Visible */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                               <div className="space-y-3">
                                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Personal Details</h4>
@@ -280,12 +279,9 @@ export default function AdminDashboard() {
                               </div>
                             </div>
 
-                            {/* The Powerful Editor Box */}
                             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                               <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2 mb-4"><AlertCircle className="w-4 h-4 text-orange-500"/> Administrative Actions</h4>
                               <div className="flex flex-col lg:flex-row gap-6">
-                                
-                                {/* 1. One Click Payment Toggle */}
                                 <div className="flex-1 bg-slate-50 p-4 rounded-lg border border-slate-200 flex items-center justify-between">
                                   <div>
                                     <p className="text-xs font-bold text-slate-500 uppercase">Current Month Rent</p>
@@ -293,38 +289,21 @@ export default function AdminDashboard() {
                                       {app.fee_status === 'paid' ? '✓ Marked as Paid' : '⚠ Payment Due'}
                                     </p>
                                   </div>
-                                  <button 
-                                    onClick={() => handleToggleFeeStatus(app.id, app.fee_status)}
-                                    disabled={updatingId === app.id}
-                                    className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${app.fee_status === 'paid' ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'}`}
-                                  >
+                                  <button onClick={() => handleToggleFeeStatus(app.id, app.fee_status)} disabled={updatingId === app.id} className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${app.fee_status === 'paid' ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'}`}>
                                     {updatingId === app.id ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : (app.fee_status === 'paid' ? 'Mark as Unpaid' : 'Mark as Paid')}
                                   </button>
                                 </div>
-
-                                {/* 2. Change Fee */}
                                 <div className="flex-1 bg-slate-50 p-4 rounded-lg border border-slate-200 flex items-center justify-between gap-4">
                                   <div className="w-full">
                                     <p className="text-xs font-bold text-slate-500 uppercase mb-1">Adjust Monthly Fee (₹)</p>
-                                    <input 
-                                      type="number" 
-                                      value={editFees[app.id] || ""} 
-                                      onChange={(e) => setEditFees({ ...editFees, [app.id]: e.target.value })} 
-                                      className="w-full p-2 border border-slate-200 rounded outline-none font-bold" 
-                                    />
+                                    <input type="number" value={editFees[app.id] || ""} onChange={(e) => setEditFees({ ...editFees, [app.id]: e.target.value })} className="w-full p-2 border border-slate-200 rounded outline-none font-bold" />
                                   </div>
-                                  <button 
-                                    onClick={() => handleUpdateFeeAmount(app.id)}
-                                    disabled={updatingId === app.id || editFees[app.id] === app.monthly_fee}
-                                    className="px-4 py-2 mt-5 bg-slate-900 text-white rounded-lg font-bold text-sm hover:bg-slate-800 disabled:opacity-50 whitespace-nowrap"
-                                  >
+                                  <button onClick={() => handleUpdateFeeAmount(app.id)} disabled={updatingId === app.id || editFees[app.id] === app.monthly_fee} className="px-4 py-2 mt-5 bg-slate-900 text-white rounded-lg font-bold text-sm hover:bg-slate-800 disabled:opacity-50 whitespace-nowrap">
                                     Update Fee
                                   </button>
                                 </div>
-
                               </div>
                             </div>
-
                           </div>
                         </motion.div>
                       )}
@@ -336,7 +315,68 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* TAB 2 & 3: MANUAL ADD and ADMINS (Omitted to keep code short, you already have these in your file, leave them as they are!) */}
+        {/* TAB 3: MANUAL OFFLINE ADD */}
+        {activeTab === "manual" && (
+          <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+            <h2 className="text-xl font-bold text-slate-900 mb-2">Register Resident Manually</h2>
+            <p className="text-slate-500 mb-8 text-sm">Fill out the mandatory fields. Optional fields can be left entirely blank. This skips the verification queue and immediately grants them portal access.</p>
+            
+            <form onSubmit={handleManualAdd} className="space-y-8">
+              <div className="p-6 bg-blue-50 border border-blue-100 rounded-xl space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-blue-800 mb-4">Mandatory Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div><label className="text-xs font-bold text-slate-700">Full Name *</label><input required type="text" value={manualForm.name} onChange={e => setManualForm({...manualForm, name: e.target.value})} className="w-full p-3 border rounded-lg mt-1" /></div>
+                  <div><label className="text-xs font-bold text-slate-700">Email Address *</label><input required type="email" value={manualForm.email} onChange={e => setManualForm({...manualForm, email: e.target.value})} className="w-full p-3 border rounded-lg mt-1" /></div>
+                  <div><label className="text-xs font-bold text-slate-700">Room Assigned *</label><input required type="text" value={manualForm.room} onChange={e => setManualForm({...manualForm, room: e.target.value})} className="w-full p-3 border rounded-lg mt-1" placeholder="e.g. 101" /></div>
+                  <div><label className="text-xs font-bold text-slate-700">Monthly Fee (₹) *</label><input required type="number" value={manualForm.monthlyFee} onChange={e => setManualForm({...manualForm, monthlyFee: e.target.value})} className="w-full p-3 border rounded-lg mt-1" /></div>
+                  <div className="md:col-span-2"><label className="text-xs font-bold text-slate-700">Sharing Type *</label>
+                    <select required value={manualForm.sharingType} onChange={e => setManualForm({...manualForm, sharingType: e.target.value})} className="w-full p-3 border rounded-lg mt-1 bg-white">
+                      <option value="Double Sharing">Double Sharing</option>
+                      <option value="Single Sharing">Single Sharing</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">Optional Background Data (Leave blank if unknown)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div><label className="text-xs font-bold text-slate-600">Phone</label><input type="tel" value={manualForm.phone} onChange={e => setManualForm({...manualForm, phone: e.target.value})} className="w-full p-3 border rounded-lg mt-1" /></div>
+                  <div><label className="text-xs font-bold text-slate-600">Parent Phone</label><input type="tel" value={manualForm.parentPhone} onChange={e => setManualForm({...manualForm, parentPhone: e.target.value})} className="w-full p-3 border rounded-lg mt-1" /></div>
+                  <div><label className="text-xs font-bold text-slate-600">DOB</label><input type="date" value={manualForm.dob} onChange={e => setManualForm({...manualForm, dob: e.target.value})} className="w-full p-3 border rounded-lg mt-1" /></div>
+                  <div><label className="text-xs font-bold text-slate-600">Father's Name</label><input type="text" value={manualForm.fatherName} onChange={e => setManualForm({...manualForm, fatherName: e.target.value})} className="w-full p-3 border rounded-lg mt-1" /></div>
+                  <div><label className="text-xs font-bold text-slate-600">Mother's Name</label><input type="text" value={manualForm.motherName} onChange={e => setManualForm({...manualForm, motherName: e.target.value})} className="w-full p-3 border rounded-lg mt-1" /></div>
+                  <div><label className="text-xs font-bold text-slate-600">Aadhaar No.</label><input type="text" value={manualForm.aadhaar} onChange={e => setManualForm({...manualForm, aadhaar: e.target.value})} className="w-full p-3 border rounded-lg mt-1" /></div>
+                  <div><label className="text-xs font-bold text-slate-600">Coaching</label><input type="text" value={manualForm.coaching} onChange={e => setManualForm({...manualForm, coaching: e.target.value})} className="w-full p-3 border rounded-lg mt-1" /></div>
+                  <div><label className="text-xs font-bold text-slate-600">Any Disease</label><input type="text" value={manualForm.disease} onChange={e => setManualForm({...manualForm, disease: e.target.value})} className="w-full p-3 border rounded-lg mt-1" /></div>
+                  <div className="md:col-span-3"><label className="text-xs font-bold text-slate-600">Permanent Address</label><textarea value={manualForm.address} onChange={e => setManualForm({...manualForm, address: e.target.value})} className="w-full p-3 border rounded-lg mt-1"></textarea></div>
+                </div>
+              </div>
+              <button disabled={addingManual} type="submit" className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 disabled:opacity-50">
+                {addingManual ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : "Save Student to Database"}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* TAB 4: ADMIN MANAGEMENT */}
+        {activeTab === "admins" && (
+          <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+            <h2 className="text-xl font-bold text-slate-900 mb-6">Manage System Admins</h2>
+            <form onSubmit={handleAddAdmin} className="flex gap-4 mb-8">
+              <input required type="email" placeholder="New admin email..." value={newAdminEmail} onChange={(e) => setNewAdminEmail(e.target.value)} className="flex-1 p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-600" />
+              <button type="submit" className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700">Add Admin</button>
+            </form>
+            <div className="space-y-3">
+              {adminList.map((admin) => (
+                <div key={admin.id} className="flex justify-between items-center p-4 border rounded-xl bg-slate-50">
+                  <span className="font-medium text-slate-900">{admin.email}</span>
+                  <button onClick={() => handleRemoveAdmin(admin.email)} className="text-red-500 hover:text-red-700 text-sm font-bold">Revoke Access</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
