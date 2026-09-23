@@ -46,7 +46,6 @@ export default function StudentDashboard() {
     router.push("/");
   };
 
-  // --- REBUILT CONCERN LOGIC WITH STRICT ERROR CATCHING ---
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -149,10 +148,9 @@ export default function StudentDashboard() {
         {/* 💳 Top Section: Digital ID & Quick Status */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           
-          {/* DIGITAL RESIDENT ID CARD (Replaces the Chart) */}
+          {/* DIGITAL RESIDENT ID CARD */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="lg:col-span-1 h-full">
             <div className="relative h-full rounded-[2rem] overflow-hidden bg-gradient-to-br from-slate-900 to-black p-1 shadow-2xl">
-              <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150"></div>
               <div className="relative h-full bg-white/5 backdrop-blur-3xl rounded-[1.8rem] p-8 flex flex-col justify-between border border-white/10">
                 <div className="flex justify-between items-start">
                   <div>
@@ -221,13 +219,14 @@ export default function StudentDashboard() {
                 <div><p className="text-xs font-bold text-slate-400 uppercase">Meals & Dining</p><p className="font-bold text-slate-900 text-sm">Breakfast: 8 AM • Dinner: 8 PM</p></div>
               </div>
 
-              {/* WARDEN */}
+              {/* WARDEN (Uses actual phone link) */}
               <div className="bg-white rounded-2xl p-4 flex items-center justify-between border border-slate-100 shadow-sm">
                 <div className="flex items-center gap-4">
                   <div className="bg-emerald-50 p-3 rounded-xl text-emerald-600"><PhoneCall className="w-5 h-5"/></div>
                   <div><p className="text-xs font-bold text-slate-400 uppercase">Warden</p><p className="font-bold text-slate-900 text-sm">Front Desk</p></div>
                 </div>
-                <a href="tel:+910000000000" className="text-xs font-bold bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-800 transition-colors">Call Now</a>
+                {/* ⚠️ CHANGE THE PHONE NUMBER HERE */}
+                <a href="tel:+919876543210" className="text-xs font-bold bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-800 transition-colors">Call Now</a>
               </div>
 
             </motion.div>

@@ -15,51 +15,63 @@ export async function POST(req: Request) {
 
     const adminEmails = admins.map((admin) => ({ email: admin.email }));
 
-    // 2. Prepare the attachment (Extract the raw base64 string if it exists)
+    // 2. Prepare the attachment safely
     let attachmentContent = undefined;
-    if (fileBase64) {
-      // Data URLs look like: "data:image/png;base64,iVBORw0KGgo..."
-      // Brevo only wants the string after the comma.
-      attachmentContent = fileBase64.includes(',') ? fileBase64.split(',')[1] : fileBase64;
+    if (fileBase64 && fileBase64.includes(',')) {
+      attachmentContent = fileBase64.split(',')[1];
+    } else if (fileBase64) {
+      attachmentContent = fileBase64;
     }
 
-    // 3. Send email to ALL admins using direct Brevo API (to support attachments safely)
+    // 3. Build Brevo Payload (Only add attachment if it exists)
+    const brevoPayload: any = {
+      // ⚠️ IMPORTANT: rahulbudhlakoti63@gmail.com MUST be verified in your Brevo Dashboard!
+      sender: { name: "Lakshya PG System", email: "rahulbudhlakoti63@gmail.com" }, 
+      
+      // ✨ MAGIC TRICK: If an admin hits "reply" in their inbox, it replies to the student!
+      replyTo: { name: studentName, email: studentEmail },
+      
+      to: adminEmails,
+      subject: `🚨 New Concern: ${studentName} (Room ${room || "TBA"})`,
+      htmlContent: `
+        <div style="font-family: sans-serif; padding: 20px; max-width: 600px;">
+          <h2 style="color: #dc2626;">Resident Issue Reported</h2>
+          <p><strong>Resident:</strong> ${studentName} (${studentEmail})</p>
+          <p><strong>Room:</strong> ${room || "N/A"}</p>
+          <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-top: 20px;">
+            <h4 style="margin-top: 0;">Issue Description:</h4>
+            <p style="white-space: pre-wrap;">${issue}</p>
+          </div>
+          ${attachmentContent ? `<p style="margin-top: 20px; font-size: 12px; color: #64748b;">📎 An attachment is included with this email.</p>` : ''}
+        </div>
+      `,
+    };
+
+    // Only attach if data is present (Prevents Brevo 500 errors)
+    if (attachmentContent && fileName) {
+      brevoPayload.attachment = [{ content: attachmentContent, name: fileName }];
+    }
+
+    // 4. Send email using direct Brevo API
     const brevoRes = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
         "accept": "application/json",
-        "api-key": process.env.BREVO_API_KEY as string,
+        "api-key": process.env.BREVO_API_KEY || "",
         "content-type": "application/json",
       },
-      body: JSON.stringify({
-        sender: { name: "Lakshya PG System", email: "noreply@lakshyapg.com" },
-        to: adminEmails,
-        subject: `🚨 New Concern Raised by ${studentName} (Room ${room || "Unassigned"})`,
-        htmlContent: `
-          <div style="font-family: sans-serif; padding: 20px; max-width: 600px;">
-            <h2 style="color: #dc2626;">Resident Issue Reported</h2>
-            <p><strong>Resident:</strong> ${studentName} (${studentEmail})</p>
-            <p><strong>Room:</strong> ${room || "N/A"}</p>
-            <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-top: 20px;">
-              <h4 style="margin-top: 0;">Issue Description:</h4>
-              <p style="white-space: pre-wrap;">${issue}</p>
-            </div>
-            ${fileBase64 ? `<p style="margin-top: 20px; font-size: 12px; color: #64748b;">📎 An attachment was included with this report.</p>` : ''}
-          </div>
-        `,
-        attachment: attachmentContent ? [{ content: attachmentContent, name: fileName }] : undefined
-      }),
+      body: JSON.stringify(brevoPayload),
     });
 
     if (!brevoRes.ok) {
-      const errData = await brevoRes.json();
-      console.error("Brevo Error:", errData);
-      throw new Error("Failed to send email via Brevo.");
+      const errText = await brevoRes.text();
+      console.error("Brevo Error:", errText);
+      return NextResponse.json({ success: false, error: "Email provider rejected the request. Ensure sender email is verified." }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error(error);
+    console.error("Concern API Error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
