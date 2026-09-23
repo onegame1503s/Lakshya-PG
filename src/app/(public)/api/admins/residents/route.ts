@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { sendBrevoEmail } from "@/lib/brevo"; // Import your email sender!
+import { sendBrevoEmail } from "@/lib/brevo";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+// FETCH all approved residents
 export async function GET() {
   try {
     const { data, error } = await supabase
@@ -20,6 +21,7 @@ export async function GET() {
   }
 }
 
+// UPDATE resident fee amount, status, or due date (WITH EMAILS!)
 export async function PATCH(req: Request) {
   try {
     const { id, monthly_fee, fee_status, rent_due_day, student_email, student_name } = await req.json();
@@ -32,7 +34,7 @@ export async function PATCH(req: Request) {
     const { error } = await supabase.from("students").update(updates).eq("id", id);
     if (error) throw error;
 
-    // AUTOMATED EMAIL NOTIFICATIONS TO THE STUDENT
+    // 🚀 AUTOMATED EMAIL NOTIFICATIONS
     if (student_email) {
       if (monthly_fee !== undefined) {
         await sendBrevoEmail({
