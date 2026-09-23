@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, UserCircle, ArrowRight } from "lucide-react";
+import { Menu, X, UserCircle, ArrowRight, PhoneCall } from "lucide-react";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -53,6 +53,12 @@ export default function Navbar() {
           <Link href="/rooms" className="hover:text-blue-600 transition-colors">Rooms</Link>
           <Link href="/facilities" className="hover:text-blue-600 transition-colors">Facilities</Link>
           <Link href="/locality" className="hover:text-blue-600 transition-colors">Locality</Link>
+          
+          {/* Contact Us Button */}
+          <a href="tel:+91XXXXXXXXXX" className="flex items-center gap-1.5 font-bold text-blue-600 hover:text-blue-700 transition-colors">
+            <PhoneCall className="w-4 h-4" />
+            Contact Us
+          </a>
           
           <div className="flex items-center space-x-6 pl-6 border-l border-slate-200">
             <Link 
@@ -111,6 +117,16 @@ export default function Navbar() {
               >
                 Locality
               </Link>
+
+              {/* Mobile Contact Us Button */}
+              <a 
+                href="tel:+91XXXXXXXXXX" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 text-lg font-bold text-blue-600"
+              >
+                <PhoneCall className="w-5 h-5" />
+                Contact Us
+              </a>
 
               <div className="h-px bg-slate-100 w-full my-2"></div>
 
