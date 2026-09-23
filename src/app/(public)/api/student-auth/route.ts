@@ -19,24 +19,25 @@ export async function POST(req: Request) {
     // PHASE 1: SENDING THE OTP
     // -------------------------------------------------------------
     if (action === "request_otp") {
-      // 1. Check Admins First
-      const { data: admin } = await supabase.from("admins").select("*").eq("email", email).maybeSingle();
+      // 1. Check Admins First (limit 1 to prevent duplicate crashes)
+      const { data: admin } = await supabase.from("admins").select("*").eq("email", email).limit(1).maybeSingle();
       
       // 2. Check Students Second (Only if Approved)
-      const { data: student } = await supabase.from("students").select("*").eq("email", email).eq("status", "approved").maybeSingle();
+      const { data: student } = await supabase.from("students").select("*").eq("email", email).eq("status", "approved").limit(1).maybeSingle();
 
       if (!admin && !student) {
-        return NextResponse.json({ success: false, error: "Either you are not a part of the hostel or you are not yet approved by the admin." }, { status: 404 });
+        return NextResponse.json({ success: false, error: "Account not found or deleted. Access revoked." }, { status: 404 });
       }
 
       const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
       const userName = admin ? "Admin" : student.name;
 
-      // Save OTP to the correct table
+      // Save OTP to the correct table (If an email is BOTH an admin and student, update both independently)
       if (admin) {
          await supabase.from("admins").update({ otp_code: generatedOtp, otp_expires_at: expiresAt }).eq("id", admin.id);
-      } else if (student) {
+      } 
+      if (student) {
          await supabase.from("students").update({ otp_code: generatedOtp, otp_expires_at: expiresAt }).eq("id", student.id);
       }
 
@@ -56,32 +57,28 @@ export async function POST(req: Request) {
     // -------------------------------------------------------------
     if (action === "verify_otp") {
       // 1. Verify Admin
-      const { data: admin } = await supabase.from("admins").select("*").eq("email", email).maybeSingle();
+      const { data: admin } = await supabase.from("admins").select("*").eq("email", email).limit(1).maybeSingle();
       
-      if (admin) {
-        if (admin.otp_code === otp && new Date(admin.otp_expires_at) > new Date()) {
-          // Clear OTP after success
-          await supabase.from("admins").update({ otp_code: null, otp_expires_at: null }).eq("id", admin.id);
-          return NextResponse.json({ success: true, role: "admin" });
-        } else {
-          return NextResponse.json({ success: false, error: "Invalid or expired OTP." }, { status: 400 });
-        }
-      }
-
       // 2. Verify Student
-      const { data: student } = await supabase.from("students").select("*").eq("email", email).eq("status", "approved").maybeSingle();
+      const { data: student } = await supabase.from("students").select("*").eq("email", email).eq("status", "approved").limit(1).maybeSingle();
 
-      if (student) {
-         if (student.otp_code === otp && new Date(student.otp_expires_at) > new Date()) {
-           // Clear OTP after success
-           await supabase.from("students").update({ otp_code: null, otp_expires_at: null }).eq("id", student.id);
-           return NextResponse.json({ success: true, role: "student" });
-         } else {
-           return NextResponse.json({ success: false, error: "Invalid or expired OTP." }, { status: 400 });
-         }
+      if (!admin && !student) {
+         return NextResponse.json({ success: false, error: "Account no longer exists in the database." }, { status: 404 });
       }
 
-      return NextResponse.json({ success: false, error: "Account not found." }, { status: 404 });
+      // Check if the OTP matches the admin record
+      if (admin && admin.otp_code === otp && new Date(admin.otp_expires_at) > new Date()) {
+        await supabase.from("admins").update({ otp_code: null, otp_expires_at: null }).eq("id", admin.id);
+        return NextResponse.json({ success: true, role: "admin" });
+      }
+
+      // Check if the OTP matches the student record
+      if (student && student.otp_code === otp && new Date(student.otp_expires_at) > new Date()) {
+        await supabase.from("students").update({ otp_code: null, otp_expires_at: null }).eq("id", student.id);
+        return NextResponse.json({ success: true, role: "student" });
+      }
+
+      return NextResponse.json({ success: false, error: "Invalid or expired OTP." }, { status: 400 });
     }
 
     return NextResponse.json({ success: false, error: "Invalid action." }, { status: 400 });
