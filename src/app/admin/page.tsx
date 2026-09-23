@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { Shield, Users, UserPlus, CheckCircle, XCircle, LogOut, Loader2, DollarSign, Calendar, Home, Mail, Plus } from "lucide-react";
+import { Shield, Users, UserPlus, CheckCircle, XCircle, LogOut, Loader2, DollarSign, Calendar, Home, Mail, Plus, Printer, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function AdminDashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -13,6 +13,7 @@ export default function AdminDashboard() {
   const [applications, setApplications] = useState<any[]>([]);
   const [adminsList, setAdminsList] = useState<any[]>([]);
   const [newAdminEmail, setNewAdminEmail] = useState("");
+  const [expandedResidentId, setExpandedResidentId] = useState<string | null>(null);
   const router = useRouter();
 
   // Manual Add Form State
@@ -150,12 +151,16 @@ export default function AdminDashboard() {
         {/* 1. RESIDENTS TAB */}
         {activeTab === "residents" && (
           <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-100 overflow-hidden">
-            <h2 className="text-xl font-bold text-slate-900 mb-6">Active Residents List</h2>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-slate-900">Active Residents List</h2>
+              <p className="text-xs text-slate-400 font-medium">Click on any resident's name to expand full profile & print PDF</p>
+            </div>
+            
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-100 text-xs font-bold text-slate-400 uppercase">
-                    <th className="pb-4">Resident</th>
+                    <th className="pb-4">Resident Name (Click to Expand)</th>
                     <th className="pb-4">Room No.</th>
                     <th className="pb-4">Monthly Fee</th>
                     <th className="pb-4">Due Date</th>
@@ -163,58 +168,113 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {residents.map((r) => (
-                    <tr key={r.id} className="hover:bg-slate-50/50">
-                      <td className="py-4 font-bold text-slate-900">{r.name}<span className="block text-xs font-normal text-slate-500">{r.email}</span></td>
-                      {/* Room Edit */}
-                      <td className="py-4">
-                        <input type="text" defaultValue={r.room || ""} onBlur={(e) => handleUpdateResident(r.id, { room: e.target.value }, r.email, r.name)} className="w-20 p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Room"/>
-                      </td>
-                      {/* Fee Edit */}
-                      <td className="py-4">
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="w-4 h-4 text-slate-400"/>
-                          <input type="number" defaultValue={r.monthly_fee} onBlur={(e) => handleUpdateResident(r.id, { monthly_fee: e.target.value }, r.email, r.name)} className="w-28 p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
-                        </div>
-                      </td>
-                      {/* Due Date Edit */}
-                      <td className="py-4">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4 text-slate-400"/>
-                          <select defaultValue={r.rent_due_day || 5} onChange={(e) => handleUpdateResident(r.id, { rent_due_day: parseInt(e.target.value) }, r.email, r.name)} className="p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none">
-                            {[...Array(31)].map((_, i) => <option key={i+1} value={i+1}>{i+1}th</option>)}
-                          </select>
-                        </div>
-                      </td>
-                      {/* Smart Advance Payment Button with Clear Date Formatting */}
-                      <td className="py-4">
-                        <button 
-                          onClick={() => {
-                            const now = new Date();
-                            const targetMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-                            const dueDay = r.rent_due_day || 5;
-                            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-                            
-                            const getOrdinalSuffix = (n: number) => {
-                              const s = ["th", "st", "nd", "rd"];
-                              const v = n % 100;
-                              return n + (s[(v - 20) % 10] || s[v] || s[0]);
-                            };
+                  {residents.map((r) => {
+                    const isExpanded = expandedResidentId === r.id;
+                    const admissionDate = r.admission_date || r.created_at ? new Date(r.admission_date || r.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : "—";
+                    
+                    return (
+                      <>
+                        <tr key={r.id} className="hover:bg-slate-50/50">
+                          {/* Clickable Resident Name */}
+                          <td className="py-4">
+                            <button 
+                              onClick={() => setExpandedResidentId(isExpanded ? null : r.id)} 
+                              className="font-bold text-blue-600 hover:underline flex items-center gap-2 text-left"
+                            >
+                              {r.name}
+                              {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                              <span className="block text-xs font-normal text-slate-500">{r.email}</span>
+                            </button>
+                          </td>
+                          {/* Room Edit */}
+                          <td className="py-4">
+                            <input type="text" defaultValue={r.room || ""} onBlur={(e) => handleUpdateResident(r.id, { room: e.target.value }, r.email, r.name)} className="w-20 p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Room"/>
+                          </td>
+                          {/* Fee Edit */}
+                          <td className="py-4">
+                            <div className="flex items-center gap-1">
+                              <DollarSign className="w-4 h-4 text-slate-400"/>
+                              <input type="number" defaultValue={r.monthly_fee} onBlur={(e) => handleUpdateResident(r.id, { monthly_fee: e.target.value }, r.email, r.name)} className="w-28 p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
+                            </div>
+                          </td>
+                          {/* Due Date Edit */}
+                          <td className="py-4">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4 text-slate-400"/>
+                              <select defaultValue={r.rent_due_day || 5} onChange={(e) => handleUpdateResident(r.id, { rent_due_day: parseInt(e.target.value) }, r.email, r.name)} className="p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none">
+                                {[...Array(31)].map((_, i) => <option key={i+1} value={i+1}>{i+1}th</option>)}
+                              </select>
+                            </div>
+                          </td>
+                          {/* Smart Advance Payment Button */}
+                          <td className="py-4">
+                            <button 
+                              onClick={() => {
+                                const now = new Date();
+                                const targetMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+                                const dueDay = r.rent_due_day || 5;
+                                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                                const getOrdinalSuffix = (n: number) => {
+                                  const s = ["th", "st", "nd", "rd"];
+                                  const v = n % 100;
+                                  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+                                };
+                                const paidTillString = `${getOrdinalSuffix(dueDay)} ${monthNames[targetMonth.getMonth()]} ${targetMonth.getFullYear()}`;
+                                const newStatus = r.fee_status === 'paid' ? 'unpaid' : 'paid';
+                                const newPaidTill = newStatus === 'paid' ? paidTillString : null;
 
-                            const paidTillString = `${getOrdinalSuffix(dueDay)} ${monthNames[targetMonth.getMonth()]} ${targetMonth.getFullYear()}`;
-                            
-                            const newStatus = r.fee_status === 'paid' ? 'unpaid' : 'paid';
-                            const newPaidTill = newStatus === 'paid' ? paidTillString : null;
+                                handleUpdateResident(r.id, { fee_status: newStatus, paid_till: newPaidTill }, r.email, r.name);
+                              }} 
+                              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm ${r.fee_status === 'paid' ? 'bg-emerald-500 text-white hover:bg-emerald-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                            >
+                              {r.fee_status === 'paid' ? `✨ Paid till ${r.paid_till || 'Next Month'}` : 'Mark Advance Paid'}
+                            </button>
+                          </td>
+                        </tr>
 
-                            handleUpdateResident(r.id, { fee_status: newStatus, paid_till: newPaidTill }, r.email, r.name);
-                          }} 
-                          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm ${r.fee_status === 'paid' ? 'bg-emerald-500 text-white hover:bg-emerald-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
-                        >
-                          {r.fee_status === 'paid' ? `✨ Paid till ${r.paid_till || 'Next Month'}` : 'Mark Advance Paid'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                        {/* EXPANDED RESIDENT DATA & PDF SAVE BUTTON */}
+                        {isExpanded && (
+                          <tr key={`${r.id}-expanded`} className="bg-slate-50/80">
+                            <td colSpan={5} className="p-6">
+                              <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
+                                <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+                                  <div>
+                                    <h3 className="text-lg font-black text-slate-900">Resident Master Profile</h3>
+                                    <p className="text-xs text-slate-400">Complete verified records for {r.name}</p>
+                                  </div>
+                                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${r.fee_status === 'paid' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                                    {r.fee_status === 'paid' ? `Paid till ${r.paid_till || 'Next Month'}` : 'Payment Due'}
+                                  </span>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
+                                  <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Full Name</span><span className="font-bold text-slate-900">{r.name}</span></div>
+                                  <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Email Address</span><span className="font-bold text-slate-900">{r.email}</span></div>
+                                  <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Phone Number</span><span className="font-bold text-slate-900">{r.phone || "—"}</span></div>
+                                  <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Parent's Phone</span><span className="font-bold text-slate-900">{r.parent_phone || "—"}</span></div>
+                                  <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Date of Birth</span><span className="font-bold text-slate-900">{r.dob || "—"}</span></div>
+                                  <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Room Number</span><span className="font-bold text-blue-600">{r.room || "Unassigned"}</span></div>
+                                  <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Monthly Fee</span><span className="font-bold text-slate-900">₹{r.monthly_fee || "N/A"}</span></div>
+                                  <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Date of Admission</span><span className="font-bold text-blue-600">{admissionDate}</span></div>
+                                  <div className="md:col-span-2 lg:col-span-4"><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Permanent Address</span><span className="font-bold text-slate-900">{r.address || "—"}</span></div>
+                                </div>
+
+                                {/* SAVE AS PDF / PRINT BUTTON AT THE BOTTOM */}
+                                <div className="pt-4 border-t border-slate-100 flex justify-end">
+                                  <button 
+                                    onClick={() => window.print()} 
+                                    className="flex items-center gap-2 bg-slate-900 hover:bg-black text-white px-6 py-3 rounded-xl font-bold text-xs transition-all shadow-md"
+                                  >
+                                    <Printer className="w-4 h-4" /> Save as PDF / Print Record
+                                  </button>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

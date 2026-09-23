@@ -108,6 +108,8 @@ export default function StudentDashboard() {
     </div>
   );
 
+  const admissionDateFormatted = student.admission_date || student.created_at ? new Date(student.admission_date || student.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : "—";
+
   return (
     <div className="min-h-screen bg-[#f4f4f5] pb-20 font-sans selection:bg-blue-500 selection:text-white">
       
@@ -179,7 +181,7 @@ export default function StudentDashboard() {
           {/* RIGHT SIDE: Payments & Amenities */}
           <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
             
-            {/* Rent Card with Clear Advance Paid-Till Date */}
+            {/* Rent Card */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="bg-white rounded-[2rem] p-8 shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col justify-between relative overflow-hidden">
               <div className={`absolute top-0 left-0 w-full h-1 ${student.fee_status === 'paid' ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
               <div>
@@ -196,7 +198,7 @@ export default function StudentDashboard() {
               </div>
             </motion.div>
 
-            {/* Quick Amenities Grid (Wi-Fi Removed) */}
+            {/* Quick Amenities Grid */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="flex flex-col gap-4 justify-center">
               
               {/* MEALS */}
@@ -218,7 +220,7 @@ export default function StudentDashboard() {
           </div>
         </div>
 
-        {/* 📄 Bottom Section: Profile Details */}
+        {/* 📄 Bottom Section: Profile Details (Includes Date of Admission) */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="bg-white rounded-[2rem] p-8 shadow-xl shadow-slate-200/50 border border-slate-100 mb-12">
           <div className="flex items-center gap-3 mb-8">
             <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600"><User className="w-5 h-5"/></div>
@@ -228,7 +230,7 @@ export default function StudentDashboard() {
             <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Phone Number</span><span className="font-medium text-slate-900">{student.phone || "—"}</span></div>
             <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Parent's Phone</span><span className="font-medium text-slate-900">{student.parent_phone || "—"}</span></div>
             <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Date of Birth</span><span className="font-medium text-slate-900">{student.dob || "—"}</span></div>
-            <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Gov ID</span><span className="font-medium text-slate-900">{student.aadhaar || "—"}</span></div>
+            <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Date of Admission</span><span className="font-medium text-blue-600 font-bold">{admissionDateFormatted}</span></div>
             <div className="md:col-span-2 lg:col-span-4 pt-4 border-t border-slate-100"><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Permanent Address</span><span className="font-medium text-slate-900">{student.address || "—"}</span></div>
           </div>
         </motion.div>
