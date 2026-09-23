@@ -21,27 +21,25 @@ export async function GET() {
   }
 }
 
-// UPDATE resident fee, status, due date, OR room number (ROBUST & TYPE-SAFE)
+// UPDATE resident fee, status, due date, room, OR paid_till
 export async function PATCH(req: Request) {
   try {
     const body = await req.json();
-    const { id, monthly_fee, fee_status, rent_due_day, room, student_email, student_name } = body;
+    const { id, monthly_fee, fee_status, rent_due_day, room, paid_till, student_email, student_name } = body;
     
     const updates: any = {};
     if (monthly_fee !== undefined) updates.monthly_fee = monthly_fee === "" ? null : Number(monthly_fee);
     if (fee_status !== undefined) updates.fee_status = fee_status;
     if (rent_due_day !== undefined) updates.rent_due_day = rent_due_day === "" ? null : Number(rent_due_day);
     if (room !== undefined) updates.room = room;
+    if (paid_till !== undefined) updates.paid_till = paid_till;
 
     const { error } = await supabase.from("students").update(updates).eq("id", id);
-    if (error) {
-      console.error("Supabase Update Error:", error);
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-    }
+    if (error) throw error;
 
-    // 🚀 AUTOMATED EMAIL NOTIFICATIONS (Isolated in try/catch so email errors never block DB updates)
+    // 🚀 AUTOMATED EMAIL NOTIFICATIONS (SUPPRESSED IF FEE STATUS IS PAID)
     try {
-      if (student_email) {
+      if (student_email && fee_status !== 'paid') {
         const residentName = student_name || "Resident";
         
         if (monthly_fee !== undefined) {
@@ -49,7 +47,7 @@ export async function PATCH(req: Request) {
             toEmail: student_email,
             toName: residentName,
             subject: "UPDATE: Your Lakshya PG Monthly Fee",
-            htmlContent: `<div style="padding: 20px; font-family: sans-serif;"><h2>Hello ${residentName},</h2><p>The admin has updated your monthly fee structure.</p><p>Your new monthly fee is: <strong style="font-size: 20px; color: #2563eb;">₹${monthly_fee}</strong></p></div>`
+            htmlContent: `<div style="padding: 20px; font-family: sans-serif;"><h2>Hello ${residentName},</h2><p>Your monthly fee structure has been updated to <strong>₹${monthly_fee}</strong>.</p></div>`
           });
         }
         if (room !== undefined) {
@@ -57,33 +55,16 @@ export async function PATCH(req: Request) {
             toEmail: student_email,
             toName: residentName,
             subject: "UPDATE: Room Assignment",
-            htmlContent: `<div style="padding: 20px; font-family: sans-serif;"><h2>Hello ${residentName},</h2><p>Your room assignment has been updated.</p><p>You are now assigned to Room: <strong style="font-size: 20px; color: #2563eb;">${room}</strong></p></div>`
-          });
-        }
-        if (rent_due_day !== undefined) {
-          await sendBrevoEmail({
-            toEmail: student_email,
-            toName: residentName,
-            subject: "UPDATE: Your Rent Due Date Changed",
-            htmlContent: `<div style="padding: 20px; font-family: sans-serif;"><h2>Hello ${residentName},</h2><p>Your rent due date schedule has been updated to the <strong>${rent_due_day}</strong> of every month.</p></div>`
-          });
-        }
-        if (fee_status !== undefined) {
-          await sendBrevoEmail({
-            toEmail: student_email,
-            toName: residentName,
-            subject: "UPDATE: Fee Status Changed",
-            htmlContent: `<div style="padding: 20px; font-family: sans-serif;"><h2>Hello ${residentName},</h2><p>Your monthly fee status has been updated to: <strong style="font-size: 18px; color: ${fee_status === 'paid' ? '#10b981' : '#ef4444'};">${fee_status.toUpperCase()}</strong></p></div>`
+            htmlContent: `<div style="padding: 20px; font-family: sans-serif;"><h2>Hello ${residentName},</h2><p>Your room assignment is now: <strong>${room}</strong></p></div>`
           });
         }
       }
     } catch (emailErr) {
-      console.error("Email notification warning (Ignored for DB success):", emailErr);
+      console.error("Email notification warning:", emailErr);
     }
     
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("Residents PATCH Error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

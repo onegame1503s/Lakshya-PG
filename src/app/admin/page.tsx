@@ -159,7 +159,7 @@ export default function AdminDashboard() {
                     <th className="pb-4">Room No.</th>
                     <th className="pb-4">Monthly Fee</th>
                     <th className="pb-4">Due Date</th>
-                    <th className="pb-4">Fee Status</th>
+                    <th className="pb-4">Fee Status (Advance)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -186,10 +186,24 @@ export default function AdminDashboard() {
                           </select>
                         </div>
                       </td>
-                      {/* Status Toggle */}
+                      {/* Smart Advance Payment Button */}
                       <td className="py-4">
-                        <button onClick={() => handleUpdateResident(r.id, { fee_status: r.fee_status === 'paid' ? 'unpaid' : 'paid' }, r.email, r.name)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${r.fee_status === 'paid' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                          {r.fee_status === 'paid' ? '✨ PAID' : '⚠️ UNPAID'}
+                        <button 
+                          onClick={() => {
+                            const nextMonth = new Date();
+                            nextMonth.setMonth(nextMonth.getMonth() + 1);
+                            const dueDay = r.rent_due_day || 5;
+                            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                            const paidTillString = `${dueDay}th ${monthNames[nextMonth.getMonth()]} ${nextMonth.getFullYear()}`;
+                            
+                            const newStatus = r.fee_status === 'paid' ? 'unpaid' : 'paid';
+                            const newPaidTill = newStatus === 'paid' ? paidTillString : null;
+
+                            handleUpdateResident(r.id, { fee_status: newStatus, paid_till: newPaidTill }, r.email, r.name);
+                          }} 
+                          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm ${r.fee_status === 'paid' ? 'bg-emerald-500 text-white hover:bg-emerald-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                        >
+                          {r.fee_status === 'paid' ? `✨ Paid till ${r.paid_till || 'Next Month'}` : 'Mark Advance Paid'}
                         </button>
                       </td>
                     </tr>
@@ -251,7 +265,7 @@ export default function AdminDashboard() {
                   <input type="text" placeholder="DD/MM/YYYY" value={manualForm.dob} onChange={(e) => setManualForm({...manualForm, dob: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Aadhaar / Gov ID</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Gov ID</label>
                   <input type="text" placeholder="XXXX XXXX XXXX" value={manualForm.aadhaar} onChange={(e) => setManualForm({...manualForm, aadhaar: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
                 </div>
                 <div>
