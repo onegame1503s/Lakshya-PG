@@ -89,14 +89,24 @@ export default function StudentDashboard() {
             </div>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="bg-emerald-100 p-4 rounded-xl text-emerald-600"><Wallet className="w-6 h-6" /></div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Monthly Fee</p>
-              <h3 className="text-2xl font-black text-slate-900">₹{student.monthly_fee || "Pending"}</h3>
-              <p className="text-xs text-slate-500 font-medium">+ ₹5000 Deposit</p>
-            </div>
-          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
+  <div className="flex items-center gap-4 mb-2">
+    <div className="bg-emerald-100 p-4 rounded-xl text-emerald-600"><Wallet className="w-6 h-6" /></div>
+    <div>
+      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Monthly Fee</p>
+      <h3 className="text-2xl font-black text-slate-900">₹{student.monthly_fee || "Pending"}</h3>
+    </div>
+  </div>
+  
+  {/* The Live Payment Badge! */}
+  <div className={`mt-2 py-2 px-3 rounded-lg text-center font-bold text-sm border ${
+    student.fee_status === 'paid' 
+      ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+      : 'bg-red-50 text-red-600 border-red-200'
+  }`}>
+    {student.fee_status === 'paid' ? '✓ RENT PAID FOR CURRENT MONTH' : '⚠ PAYMENT DUE'}
+  </div>
+</motion.div>
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
             <div className="bg-orange-100 p-4 rounded-xl text-orange-600"><Calendar className="w-6 h-6" /></div>
