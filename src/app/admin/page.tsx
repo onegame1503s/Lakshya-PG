@@ -57,13 +57,21 @@ export default function AdminDashboard() {
   };
 
   const handleUpdateResident = async (id: string, updates: any, email: string, name: string) => {
-    const res = await fetch("/api/admins/residents", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, ...updates, student_email: email, student_name: name })
-    });
-    if (res.ok) fetchData();
-    else alert("Failed to update");
+    try {
+      const res = await fetch("/api/admins/residents", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, ...updates, student_email: email, student_name: name })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        fetchData();
+      } else {
+        alert("Failed to update: " + (data.error || "Unknown server error"));
+      }
+    } catch (err: any) {
+      alert("Network error: " + err.message);
+    }
   };
 
   const handleApproveApplication = async (app: any) => {
