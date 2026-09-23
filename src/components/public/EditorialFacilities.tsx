@@ -2,7 +2,6 @@
 
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import Link from "next/link";
 
 const HOSTEL_IMAGES = {
   room: "/room.jpg", 
@@ -136,20 +135,6 @@ export default function EditorialFacilities() {
             </div>
           </motion.div>
         </div>
-
-        {/* TEMPORARY ADMIN ACCESS BUTTON */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="flex justify-center border-t border-zinc-200/50 pt-16"
-        >
-          <Link href="/admin">
-            <button className="text-[10px] font-bold tracking-[0.2em] text-zinc-500 uppercase border border-zinc-300 px-8 py-4 rounded-full hover:bg-zinc-950 hover:text-white transition-all duration-300">
-              Temp Admin Access
-            </button>
-          </Link>
-        </motion.div>
 
       </div>
     </section>
