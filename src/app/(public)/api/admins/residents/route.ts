@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { sendBrevoEmail } from "@/lib/brevo";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-// FETCH all approved residents
 export async function GET() {
   try {
     const { data, error } = await supabase
@@ -21,7 +19,6 @@ export async function GET() {
   }
 }
 
-// UPDATE any resident details (Full Profile Edit + Fee/Room/Status)
 export async function PATCH(req: Request) {
   try {
     const body = await req.json();
@@ -32,27 +29,31 @@ export async function PATCH(req: Request) {
       phone, 
       parent_phone, 
       dob, 
-      aadhaar, 
+      father_name,
+      mother_name,
+      coaching,
+      disease,
       address, 
       room, 
       sharing_type, 
       monthly_fee, 
       fee_status, 
       rent_due_day, 
-      paid_till, 
-      student_email, 
-      student_name 
+      paid_till 
     } = body;
     
     const updates: any = {};
-    if (name !== undefined) updates.name = name;
-    if (email !== undefined) updates.email = email;
-    if (phone !== undefined) updates.phone = phone;
-    if (parent_phone !== undefined) updates.parent_phone = parent_phone;
-    if (dob !== undefined) updates.dob = dob;
-    if (aadhaar !== undefined) updates.aadhaar = aadhaar;
-    if (address !== undefined) updates.address = address;
-    if (room !== undefined) updates.room = room;
+    if (name !== undefined) updates.name = name === "" ? null : name;
+    if (email !== undefined) updates.email = email === "" ? null : email;
+    if (phone !== undefined) updates.phone = phone === "" ? null : phone;
+    if (parent_phone !== undefined) updates.parent_phone = parent_phone === "" ? null : parent_phone;
+    if (dob !== undefined) updates.dob = dob === "" ? null : dob;
+    if (father_name !== undefined) updates.father_name = father_name === "" ? null : father_name;
+    if (mother_name !== undefined) updates.mother_name = mother_name === "" ? null : mother_name;
+    if (coaching !== undefined) updates.coaching = coaching === "" ? null : coaching;
+    if (disease !== undefined) updates.disease = disease === "" ? null : disease;
+    if (address !== undefined) updates.address = address === "" ? null : address;
+    if (room !== undefined) updates.room = room === "" ? null : room;
     if (sharing_type !== undefined) updates.sharing_type = sharing_type;
     if (monthly_fee !== undefined) updates.monthly_fee = monthly_fee === "" ? null : Number(monthly_fee);
     if (fee_status !== undefined) updates.fee_status = fee_status;
@@ -62,33 +63,6 @@ export async function PATCH(req: Request) {
     const { error } = await supabase.from("students").update(updates).eq("id", id);
     if (error) throw error;
 
-    // 🚀 AUTOMATED EMAIL NOTIFICATIONS (Suppressed if fee status is paid)
-    try {
-      const targetEmail = email || student_email;
-      const targetName = name || student_name || "Resident";
-
-      if (targetEmail && fee_status !== 'paid') {
-        if (monthly_fee !== undefined) {
-          await sendBrevoEmail({
-            toEmail: targetEmail,
-            toName: targetName,
-            subject: "UPDATE: Your Lakshya PG Monthly Fee",
-            htmlContent: `<div style="padding: 20px; font-family: sans-serif;"><h2>Hello ${targetName},</h2><p>Your monthly fee structure has been updated to <strong>₹${monthly_fee}</strong>.</p></div>`
-          });
-        }
-        if (room !== undefined) {
-          await sendBrevoEmail({
-            toEmail: targetEmail,
-            toName: targetName,
-            subject: "UPDATE: Room Assignment",
-            htmlContent: `<div style="padding: 20px; font-family: sans-serif;"><h2>Hello ${targetName},</h2><p>Your room assignment is now: <strong>${room}</strong></p></div>`
-          });
-        }
-      }
-    } catch (emailErr) {
-      console.error("Email notification warning:", emailErr);
-    }
-    
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Residents PATCH Error:", error);

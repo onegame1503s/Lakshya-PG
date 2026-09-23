@@ -12,7 +12,10 @@ export async function POST(req: Request) {
       phone, 
       parent_phone, 
       dob, 
-      aadhaar, 
+      father_name,
+      mother_name,
+      coaching,
+      disease,
       room, 
       monthly_fee, 
       address, 
@@ -20,7 +23,7 @@ export async function POST(req: Request) {
     } = body;
 
     if (!name || !email) {
-      return NextResponse.json({ success: false, error: "Full Name and Email Address are required." }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Applicant Name and Email Address are required." }, { status: 400 });
     }
 
     const newStudent = {
@@ -29,7 +32,10 @@ export async function POST(req: Request) {
       phone: phone ? phone.trim() : null,
       parent_phone: parent_phone ? parent_phone.trim() : null,
       dob: dob ? dob.trim() : null,
-      aadhaar: aadhaar ? aadhaar.trim() : null,
+      father_name: father_name ? father_name.trim() : null,
+      mother_name: mother_name ? mother_name.trim() : null,
+      coaching: coaching ? coaching.trim() : null,
+      disease: disease ? disease.trim() : "None",
       room: room ? room.trim() : null,
       monthly_fee: monthly_fee ? Number(monthly_fee) : 8500,
       address: address ? address.trim() : null,
@@ -41,14 +47,10 @@ export async function POST(req: Request) {
     };
 
     const { error } = await supabase.from("students").insert([newStudent]);
-    if (error) {
-      console.error("Supabase Manual Insert Error:", error);
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-    }
+    if (error) throw error;
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("Manual Add API Error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

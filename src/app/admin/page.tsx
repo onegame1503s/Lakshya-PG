@@ -15,23 +15,25 @@ export default function AdminDashboard() {
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [expandedResidentId, setExpandedResidentId] = useState<string | null>(null);
   
-  // Editable profile state for the currently expanded resident
   const [editFormData, setEditFormData] = useState<any>({});
   const [savingProfile, setSavingProfile] = useState(false);
-
   const router = useRouter();
 
-  // Manual Add Form State (Strictly matching the 8 requested fields + sharing type)
+  // Manual Add Form State (All 11 Fields)
   const [manualForm, setManualForm] = useState({
+    sharing_type: "Double Sharing",
     name: "", 
     email: "", 
+    dob: "",
+    father_name: "",
+    mother_name: "",
     phone: "", 
     parent_phone: "", 
-    dob: "", 
+    coaching: "",
     room: "", 
     monthly_fee: "8500", 
     address: "",
-    sharing_type: "Double Sharing"
+    disease: "None"
   });
   const [manualSubmitting, setManualSubmitting] = useState(false);
 
@@ -75,11 +77,8 @@ export default function AdminDashboard() {
         body: JSON.stringify({ id, ...updates, student_email: email, student_name: name })
       });
       const data = await res.json();
-      if (res.ok && data.success) {
-        fetchData();
-      } else {
-        alert("Failed to update: " + (data.error || "Unknown server error"));
-      }
+      if (res.ok && data.success) fetchData();
+      else alert("Failed to update: " + (data.error || "Unknown server error"));
     } catch (err: any) {
       alert("Network error: " + err.message);
     }
@@ -128,8 +127,8 @@ export default function AdminDashboard() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        alert("Student successfully onboarded and saved to database!");
-        setManualForm({ name: "", email: "", phone: "", parent_phone: "", dob: "", room: "", monthly_fee: "8500", address: "", sharing_type: "Double Sharing" });
+        alert("Student successfully onboarded and saved!");
+        setManualForm({ sharing_type: "Double Sharing", name: "", email: "", dob: "", father_name: "", mother_name: "", phone: "", parent_phone: "", coaching: "", room: "", monthly_fee: "8500", address: "", disease: "None" });
         fetchData();
         setActiveTab("residents");
       } else {
@@ -194,7 +193,7 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-100 overflow-hidden">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-slate-900">Active Residents List</h2>
-              <p className="text-xs text-slate-400 font-medium">Click on any resident's name to expand, fully edit records, or save as PDF</p>
+              <p className="text-xs text-slate-400 font-medium">Click on any resident's name to expand, fully edit all fields, or save as PDF</p>
             </div>
             
             <div className="overflow-x-auto">
@@ -216,7 +215,6 @@ export default function AdminDashboard() {
                     return (
                       <>
                         <tr key={r.id} className="hover:bg-slate-50/50">
-                          {/* Clickable Resident Name */}
                           <td className="py-4">
                             <button 
                               onClick={() => {
@@ -225,14 +223,19 @@ export default function AdminDashboard() {
                                 } else {
                                   setExpandedResidentId(r.id);
                                   setEditFormData({
+                                    sharing_type: r.sharing_type || "Double Sharing",
                                     name: r.name || "",
                                     email: r.email || "",
+                                    dob: r.dob || "",
+                                    father_name: r.father_name || "",
+                                    mother_name: r.mother_name || "",
                                     phone: r.phone || "",
                                     parent_phone: r.parent_phone || "",
-                                    dob: r.dob || "",
+                                    coaching: r.coaching || "",
                                     room: r.room || "",
                                     monthly_fee: r.monthly_fee || "",
-                                    address: r.address || ""
+                                    address: r.address || "",
+                                    disease: r.disease || "None"
                                   });
                                 }
                               }} 
@@ -243,18 +246,15 @@ export default function AdminDashboard() {
                               <span className="block text-xs font-normal text-slate-500">{r.email}</span>
                             </button>
                           </td>
-                          {/* Room Quick Edit */}
                           <td className="py-4">
                             <input type="text" defaultValue={r.room || ""} onBlur={(e) => handleUpdateResidentQuick(r.id, { room: e.target.value }, r.email, r.name)} className="w-20 p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Room"/>
                           </td>
-                          {/* Fee Quick Edit */}
                           <td className="py-4">
                             <div className="flex items-center gap-1">
                               <DollarSign className="w-4 h-4 text-slate-400"/>
                               <input type="number" defaultValue={r.monthly_fee} onBlur={(e) => handleUpdateResidentQuick(r.id, { monthly_fee: e.target.value }, r.email, r.name)} className="w-28 p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
                             </div>
                           </td>
-                          {/* Due Date Edit */}
                           <td className="py-4">
                             <div className="flex items-center gap-1">
                               <Calendar className="w-4 h-4 text-slate-400"/>
@@ -263,7 +263,6 @@ export default function AdminDashboard() {
                               </select>
                             </div>
                           </td>
-                          {/* Smart Advance Payment Button */}
                           <td className="py-4">
                             <button 
                               onClick={() => {
@@ -289,7 +288,7 @@ export default function AdminDashboard() {
                           </td>
                         </tr>
 
-                        {/* EXPANDED & FULLY EDITABLE RESIDENT DATA */}
+                        {/* EXPANDED FULL EDIT FORM (ALL 11 FIELDS) */}
                         {isExpanded && (
                           <tr key={`${r.id}-expanded`} className="bg-slate-50/80">
                             <td colSpan={5} className="p-6">
@@ -297,61 +296,74 @@ export default function AdminDashboard() {
                                 <div className="flex justify-between items-center border-b border-slate-100 pb-4">
                                   <div>
                                     <h3 className="text-xl font-black text-slate-900">Edit Resident Master Profile</h3>
-                                    <p className="text-xs text-slate-400">Modify any details below. Changes sync instantly to the student's dashboard.</p>
+                                    <p className="text-xs text-slate-400">Modify any of the 11 applicant details below. Changes sync instantly.</p>
                                   </div>
-                                  <div className="flex items-center gap-3">
-                                    <span className="text-xs font-bold text-slate-500">Admission Date: <strong className="text-blue-600">{admissionDate}</strong></span>
-                                  </div>
+                                  <span className="text-xs font-bold text-slate-500">Admission Date: <strong className="text-blue-600">{admissionDate}</strong></span>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                   <div>
-                                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Full Name</label>
-                                    <input type="text" value={editFormData.name || ""} onChange={(e) => setEditFormData({...editFormData, name: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Room Sharing Preference</label>
+                                    <select value={editFormData.sharing_type || "Double Sharing"} onChange={(e) => setEditFormData({...editFormData, sharing_type: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none">
+                                      <option value="Double Sharing">Double Sharing</option>
+                                      <option value="Single Sharing">Single Sharing</option>
+                                    </select>
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Email Address</label>
-                                    <input type="email" value={editFormData.email || ""} onChange={(e) => setEditFormData({...editFormData, email: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Applicant Name</label>
+                                    <input type="text" value={editFormData.name || ""} onChange={(e) => setEditFormData({...editFormData, name: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none"/>
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Phone Number</label>
-                                    <input type="text" value={editFormData.phone || ""} onChange={(e) => setEditFormData({...editFormData, phone: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Email Address</label>
+                                    <input type="email" value={editFormData.email || ""} onChange={(e) => setEditFormData({...editFormData, email: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none"/>
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Parent's Phone</label>
-                                    <input type="text" value={editFormData.parent_phone || ""} onChange={(e) => setEditFormData({...editFormData, parent_phone: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Date of Birth</label>
+                                    <input type="text" value={editFormData.dob || ""} onChange={(e) => setEditFormData({...editFormData, dob: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none"/>
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Date of Birth</label>
-                                    <input type="text" value={editFormData.dob || ""} onChange={(e) => setEditFormData({...editFormData, dob: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Father's Name</label>
+                                    <input type="text" value={editFormData.father_name || ""} onChange={(e) => setEditFormData({...editFormData, father_name: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none"/>
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Room Number</label>
-                                    <input type="text" value={editFormData.room || ""} onChange={(e) => setEditFormData({...editFormData, room: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Mother's Name</label>
+                                    <input type="text" value={editFormData.mother_name || ""} onChange={(e) => setEditFormData({...editFormData, mother_name: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none"/>
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Monthly Fee (₹)</label>
-                                    <input type="number" value={editFormData.monthly_fee || ""} onChange={(e) => setEditFormData({...editFormData, monthly_fee: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Applicant Ph. No.</label>
+                                    <input type="text" value={editFormData.phone || ""} onChange={(e) => setEditFormData({...editFormData, phone: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none"/>
                                   </div>
-                                  <div className="md:col-span-2 lg:col-span-2">
-                                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Permanent Address</label>
-                                    <textarea rows={2} value={editFormData.address || ""} onChange={(e) => setEditFormData({...editFormData, address: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                                  <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Parents Ph. No.</label>
+                                    <input type="text" value={editFormData.parent_phone || ""} onChange={(e) => setEditFormData({...editFormData, parent_phone: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none"/>
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Coaching Name</label>
+                                    <input type="text" value={editFormData.coaching || ""} onChange={(e) => setEditFormData({...editFormData, coaching: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none"/>
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Room Number</label>
+                                    <input type="text" value={editFormData.room || ""} onChange={(e) => setEditFormData({...editFormData, room: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none"/>
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Monthly Fee (₹)</label>
+                                    <input type="number" value={editFormData.monthly_fee || ""} onChange={(e) => setEditFormData({...editFormData, monthly_fee: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none"/>
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Any Disease</label>
+                                    <input type="text" value={editFormData.disease || ""} onChange={(e) => setEditFormData({...editFormData, disease: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none"/>
+                                  </div>
+                                  <div className="md:col-span-2 lg:col-span-3">
+                                    <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Permanent Address</label>
+                                    <textarea rows={2} value={editFormData.address || ""} onChange={(e) => setEditFormData({...editFormData, address: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none resize-none"></textarea>
                                   </div>
                                 </div>
 
                                 <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
-                                  <button 
-                                    onClick={() => handleSaveFullProfile(r.id, r.email)} 
-                                    disabled={savingProfile}
-                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-xs transition-all shadow-md disabled:opacity-50"
-                                  >
+                                  <button onClick={() => handleSaveFullProfile(r.id, r.email)} disabled={savingProfile} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-xs transition-all shadow-md disabled:opacity-50">
                                     {savingProfile ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>} Save Profile Changes
                                   </button>
-
-                                  <button 
-                                    onClick={() => window.print()} 
-                                    className="flex items-center gap-2 bg-slate-900 hover:bg-black text-white px-6 py-3 rounded-xl font-bold text-xs transition-all shadow-md"
-                                  >
+                                  <button onClick={() => window.print()} className="flex items-center gap-2 bg-slate-900 hover:bg-black text-white px-6 py-3 rounded-xl font-bold text-xs transition-all shadow-md">
                                     <Printer className="w-4 h-4" /> Save as PDF / Print Record
                                   </button>
                                 </div>
@@ -378,9 +390,14 @@ export default function AdminDashboard() {
                   <div key={app.id} className="p-6 rounded-2xl border border-slate-100 bg-slate-50 flex flex-col justify-between">
                     <div>
                       <h3 className="text-lg font-bold text-slate-900">{app.name}</h3>
-                      <p className="text-xs text-blue-600 font-mono mb-4">{app.email} • {app.phone}</p>
-                      <p className="text-sm text-slate-600 mb-2"><strong>Room Preference:</strong> {app.sharing_type}</p>
-                      <p className="text-sm text-slate-600 mb-4"><strong>Address:</strong> {app.address}</p>
+                      <p className="text-xs text-blue-600 font-mono mb-2">{app.email} • {app.phone || "No Phone"}</p>
+                      <p className="text-xs text-slate-500 mb-4"><strong>Sharing:</strong> {app.sharing_type} | <strong>Coaching:</strong> {app.coaching || "None"}</p>
+                      <div className="text-sm text-slate-600 space-y-1 mb-4">
+                        <p><strong>Parents Phone:</strong> {app.parent_phone || "—"}</p>
+                        <p><strong>DOB:</strong> {app.dob || "—"} | <strong>Disease:</strong> {app.disease || "None"}</p>
+                        <p><strong>Parents:</strong> {app.father_name || "—"} & {app.mother_name || "—"}</p>
+                        <p><strong>Address:</strong> {app.address || "—"}</p>
+                      </div>
                     </div>
                     <button onClick={() => handleApproveApplication(app)} className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors shadow-lg shadow-emerald-600/20">Approve Resident</button>
                   </div>
@@ -390,7 +407,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* 3. MANUALLY ADD STUDENT TAB (EXACTLY THE 8 REQUESTED FIELDS + OPTIONAL BLANK SPACES) */}
+        {/* 3. MANUALLY ADD STUDENT TAB (ALL 11 FIELDS WITH HIGH CONTRAST) */}
         {activeTab === "manual" && (
           <div className="bg-white rounded-3xl p-8 shadow-xl border border-slate-100 max-w-3xl mx-auto">
             <h2 className="text-2xl font-bold text-slate-900 mb-2">Manually Add Resident</h2>
@@ -399,7 +416,14 @@ export default function AdminDashboard() {
             <form onSubmit={handleManualSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Full Name *</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Room Sharing Preference</label>
+                  <select value={manualForm.sharing_type} onChange={(e) => setManualForm({...manualForm, sharing_type: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium outline-none focus:ring-2 focus:ring-blue-600">
+                    <option value="Double Sharing">Double Sharing</option>
+                    <option value="Single Sharing">Single Sharing</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Applicant Name *</label>
                   <input type="text" required placeholder="John Doe" value={manualForm.name} onChange={(e) => setManualForm({...manualForm, name: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
                 </div>
                 <div>
@@ -407,16 +431,28 @@ export default function AdminDashboard() {
                   <input type="email" required placeholder="john@example.com" value={manualForm.email} onChange={(e) => setManualForm({...manualForm, email: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Phone Number</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Date of Birth</label>
+                  <input type="text" placeholder="DD/MM/YYYY" value={manualForm.dob} onChange={(e) => setManualForm({...manualForm, dob: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Father's Name</label>
+                  <input type="text" placeholder="Father's Name" value={manualForm.father_name} onChange={(e) => setManualForm({...manualForm, father_name: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Mother's Name</label>
+                  <input type="text" placeholder="Mother's Name" value={manualForm.mother_name} onChange={(e) => setManualForm({...manualForm, mother_name: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Applicant Ph. No.</label>
                   <input type="text" placeholder="9876543210" value={manualForm.phone} onChange={(e) => setManualForm({...manualForm, phone: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Parent's Phone</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Parents Ph. No.</label>
                   <input type="text" placeholder="9876543210" value={manualForm.parent_phone} onChange={(e) => setManualForm({...manualForm, parent_phone: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Date of Birth</label>
-                  <input type="text" placeholder="DD/MM/YYYY" value={manualForm.dob} onChange={(e) => setManualForm({...manualForm, dob: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Coaching Name</label>
+                  <input type="text" placeholder="Coaching Institute" value={manualForm.coaching} onChange={(e) => setManualForm({...manualForm, coaching: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Room Number</label>
@@ -425,6 +461,10 @@ export default function AdminDashboard() {
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Monthly Fee (₹)</label>
                   <input type="number" value={manualForm.monthly_fee} onChange={(e) => setManualForm({...manualForm, monthly_fee: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Any Disease</label>
+                  <input type="text" placeholder="None or condition" value={manualForm.disease} onChange={(e) => setManualForm({...manualForm, disease: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
                 </div>
               </div>
               <div>
