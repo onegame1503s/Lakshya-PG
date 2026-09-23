@@ -9,7 +9,7 @@ const CORE_FACILITIES = [
     title: "Nutritional Infrastructure",
     specs: "FIXED HOURS // HYGIENIC PREPARATION",
     description: "Time is a student's most valuable asset. Our dedicated dining facilities operate with absolute punctuality, ensuring your study routine remains uninterrupted.",
-    image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=2070&auto=format&fit=crop", 
+    image: "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?q=80&w=2070&auto=format&fit=crop", 
   },
   {
     id: "02",
