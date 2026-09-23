@@ -186,15 +186,22 @@ export default function AdminDashboard() {
                           </select>
                         </div>
                       </td>
-                      {/* Smart Advance Payment Button */}
+                      {/* Smart Advance Payment Button with Clear Date Formatting */}
                       <td className="py-4">
                         <button 
                           onClick={() => {
-                            const nextMonth = new Date();
-                            nextMonth.setMonth(nextMonth.getMonth() + 1);
+                            const now = new Date();
+                            const targetMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
                             const dueDay = r.rent_due_day || 5;
                             const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-                            const paidTillString = `${dueDay}th ${monthNames[nextMonth.getMonth()]} ${nextMonth.getFullYear()}`;
+                            
+                            const getOrdinalSuffix = (n: number) => {
+                              const s = ["th", "st", "nd", "rd"];
+                              const v = n % 100;
+                              return n + (s[(v - 20) % 10] || s[v] || s[0]);
+                            };
+
+                            const paidTillString = `${getOrdinalSuffix(dueDay)} ${monthNames[targetMonth.getMonth()]} ${targetMonth.getFullYear()}`;
                             
                             const newStatus = r.fee_status === 'paid' ? 'unpaid' : 'paid';
                             const newPaidTill = newStatus === 'paid' ? paidTillString : null;
@@ -236,7 +243,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* 3. MANUALLY ADD STUDENT TAB (SHARP TEXT CONTRAST) */}
+        {/* 3. MANUALLY ADD STUDENT TAB */}
         {activeTab === "manual" && (
           <div className="bg-white rounded-3xl p-8 shadow-xl border border-slate-100 max-w-3xl mx-auto">
             <h2 className="text-2xl font-bold text-slate-900 mb-2">Manually Add Resident</h2>

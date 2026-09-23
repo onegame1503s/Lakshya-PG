@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, LogOut, User, Home, Wallet, Calendar, Shield, MessageSquareWarning, UploadCloud, CheckCircle, Wifi, Coffee, PhoneCall, QrCode } from "lucide-react";
+import { Loader2, LogOut, User, Home, Wallet, Calendar, Shield, MessageSquareWarning, UploadCloud, CheckCircle, Coffee, PhoneCall, QrCode } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function StudentDashboard() {
@@ -17,9 +17,6 @@ export default function StudentDashboard() {
   const [concernFile, setConcernFile] = useState<{ base64: string, name: string } | null>(null);
   const [submittingConcern, setSubmittingConcern] = useState(false);
   const [concernSuccess, setConcernSuccess] = useState(false);
-
-  // Hidden WiFi State
-  const [showWifi, setShowWifi] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -182,51 +179,39 @@ export default function StudentDashboard() {
           {/* RIGHT SIDE: Payments & Amenities */}
           <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
             
-            {/* Rent Card */}
+            {/* Rent Card with Clear Advance Paid-Till Date */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="bg-white rounded-[2rem] p-8 shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col justify-between relative overflow-hidden">
               <div className={`absolute top-0 left-0 w-full h-1 ${student.fee_status === 'paid' ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
               <div>
                 <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center mb-6 border border-slate-100">
                   <Wallet className="w-6 h-6 text-slate-800" />
                 </div>
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Monthly Rent</p>
+                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Monthly Rent (Advance)</p>
                 <h3 className="text-4xl font-black text-slate-900 mt-2">₹{student.monthly_fee || "N/A"}</h3>
               </div>
               <div className="mt-6">
-                <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider ${student.fee_status === 'paid' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                  {student.fee_status === 'paid' ? '✨ Paid for this month' : '⚠️ Payment is Due'}
+                <span className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider ${student.fee_status === 'paid' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                  {student.fee_status === 'paid' ? `✨ Paid till ${student.paid_till || 'Next Cycle'}` : '⚠️ Advance Payment Due'}
                 </span>
               </div>
             </motion.div>
 
-            {/* Quick Amenities Grid */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="grid grid-rows-3 gap-4">
+            {/* Quick Amenities Grid (Wi-Fi Removed) */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="flex flex-col gap-4 justify-center">
               
-              {/* WIFI */}
-              <div onClick={() => setShowWifi(!showWifi)} className="bg-white rounded-2xl p-4 flex items-center justify-between border border-slate-100 shadow-sm cursor-pointer hover:shadow-md transition-all group">
-                <div className="flex items-center gap-4">
-                  <div className="bg-blue-50 p-3 rounded-xl text-blue-600 group-hover:scale-110 transition-transform"><Wifi className="w-5 h-5"/></div>
-                  <div><p className="text-xs font-bold text-slate-400 uppercase">PG Wi-Fi</p><p className="font-bold text-slate-900">Lakshya_5G</p></div>
-                </div>
-                <div className="text-sm font-mono bg-slate-100 px-3 py-1 rounded-lg text-slate-600">
-                  {showWifi ? "lakshya@2024" : "••••••••"}
-                </div>
-              </div>
-
               {/* MEALS */}
-              <div className="bg-white rounded-2xl p-4 flex items-center gap-4 border border-slate-100 shadow-sm">
+              <div className="bg-white rounded-2xl p-5 flex items-center gap-4 border border-slate-100 shadow-sm">
                 <div className="bg-orange-50 p-3 rounded-xl text-orange-600"><Coffee className="w-5 h-5"/></div>
                 <div><p className="text-xs font-bold text-slate-400 uppercase">Meals & Dining</p><p className="font-bold text-slate-900 text-sm">Breakfast: 8 AM • Dinner: 8 PM</p></div>
               </div>
 
-              {/* WARDEN (Uses actual phone link) */}
-              <div className="bg-white rounded-2xl p-4 flex items-center justify-between border border-slate-100 shadow-sm">
+              {/* WARDEN */}
+              <div className="bg-white rounded-2xl p-5 flex items-center justify-between border border-slate-100 shadow-sm">
                 <div className="flex items-center gap-4">
                   <div className="bg-emerald-50 p-3 rounded-xl text-emerald-600"><PhoneCall className="w-5 h-5"/></div>
                   <div><p className="text-xs font-bold text-slate-400 uppercase">Warden</p><p className="font-bold text-slate-900 text-sm">Front Desk</p></div>
                 </div>
-                {/* ⚠️ CHANGE THE PHONE NUMBER HERE */}
-                <a href="tel:+91 9927935759" className="text-xs font-bold bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-800 transition-colors">Call Now</a>
+                <a href="tel:+919876543210" className="text-xs font-bold bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-800 transition-colors">Call Now</a>
               </div>
 
             </motion.div>
@@ -243,7 +228,7 @@ export default function StudentDashboard() {
             <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Phone Number</span><span className="font-medium text-slate-900">{student.phone || "—"}</span></div>
             <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Parent's Phone</span><span className="font-medium text-slate-900">{student.parent_phone || "—"}</span></div>
             <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Date of Birth</span><span className="font-medium text-slate-900">{student.dob || "—"}</span></div>
-            <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Aadhaar / Gov ID</span><span className="font-medium text-slate-900">{student.aadhaar || "—"}</span></div>
+            <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Gov ID</span><span className="font-medium text-slate-900">{student.aadhaar || "—"}</span></div>
             <div className="md:col-span-2 lg:col-span-4 pt-4 border-t border-slate-100"><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Permanent Address</span><span className="font-medium text-slate-900">{student.address || "—"}</span></div>
           </div>
         </motion.div>
