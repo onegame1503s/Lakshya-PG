@@ -21,14 +21,24 @@ export default function StudentDashboard() {
   useEffect(() => {
     const fetchProfile = async () => {
       const email = localStorage.getItem("userEmail");
-      if (!email) return router.push("/student/login");
+      if (!email) {
+        router.push("/student/login");
+        return;
+      }
       try {
         const res = await fetch("/student/profile", {
           method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }),
         });
         const data = await res.json();
-        if (data.success) setStudent(data.student);
-        else setError(data.error);
+        
+        if (data.success && data.student) {
+          setStudent(data.student);
+        } else {
+          // Ghost Session Fix: User no longer exists in DB, wipe storage & kick to login
+          localStorage.removeItem("userEmail");
+          router.push("/student/login");
+          return;
+        }
       } catch (err: any) {
         setError("Failed to load profile.");
       } finally {
