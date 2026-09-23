@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { Shield, Users, UserPlus, CheckCircle, XCircle, LogOut, Loader2, DollarSign, Calendar, Home, Mail, Plus, Printer, ChevronDown, ChevronUp } from "lucide-react";
+import { Shield, Users, UserPlus, CheckCircle, XCircle, LogOut, Loader2, DollarSign, Calendar, Home, Mail, Plus, Printer, ChevronDown, ChevronUp, Save } from "lucide-react";
 
 export default function AdminDashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -14,6 +14,11 @@ export default function AdminDashboard() {
   const [adminsList, setAdminsList] = useState<any[]>([]);
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [expandedResidentId, setExpandedResidentId] = useState<string | null>(null);
+  
+  // Editable profile state for the currently expanded resident
+  const [editFormData, setEditFormData] = useState<any>({});
+  const [savingProfile, setSavingProfile] = useState(false);
+
   const router = useRouter();
 
   // Manual Add Form State
@@ -41,17 +46,14 @@ export default function AdminDashboard() {
   }, [checkAdminAuth]);
 
   const fetchData = async () => {
-    // Fetch Residents
     const resRes = await fetch("/api/admins/residents");
     const resData = await resRes.json();
     if (resData.success) setResidents(resData.residents);
 
-    // Fetch Applications
     const appRes = await fetch("/api/admins/applications");
     const appData = await appRes.json();
     if (appData.success) setApplications(appData.applications);
 
-    // Fetch Admins
     const adminRes = await fetch("/api/admins/manage");
     const adminData = await adminRes.json();
     if (adminData.success) setAdminsList(adminData.admins);
@@ -72,6 +74,28 @@ export default function AdminDashboard() {
       }
     } catch (err: any) {
       alert("Network error: " + err.message);
+    }
+  };
+
+  const handleSaveFullProfile = async (id: string, originalEmail: string) => {
+    setSavingProfile(true);
+    try {
+      const res = await fetch("/api/admins/residents", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, ...editFormData, student_email: originalEmail })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert("Resident profile updated successfully!");
+        fetchData();
+      } else {
+        alert("Failed to save: " + (data.error || "Unknown error"));
+      }
+    } catch (err: any) {
+      alert("Network error: " + err.message);
+    } finally {
+      setSavingProfile(false);
     }
   };
 
@@ -153,7 +177,7 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-100 overflow-hidden">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-slate-900">Active Residents List</h2>
-              <p className="text-xs text-slate-400 font-medium">Click on any resident's name to expand full profile & print PDF</p>
+              <p className="text-xs text-slate-400 font-medium">Click on any resident's name to expand, fully edit records, or print PDF</p>
             </div>
             
             <div className="overflow-x-auto">
@@ -178,7 +202,25 @@ export default function AdminDashboard() {
                           {/* Clickable Resident Name */}
                           <td className="py-4">
                             <button 
-                              onClick={() => setExpandedResidentId(isExpanded ? null : r.id)} 
+                              onClick={() => {
+                                if (isExpanded) {
+                                  setExpandedResidentId(null);
+                                } else {
+                                  setExpandedResidentId(r.id);
+                                  setEditFormData({
+                                    name: r.name || "",
+                                    email: r.email || "",
+                                    phone: r.phone || "",
+                                    parent_phone: r.parent_phone || "",
+                                    dob: r.dob || "",
+                                    aadhaar: r.aadhaar || "",
+                                    room: r.room || "",
+                                    monthly_fee: r.monthly_fee || "",
+                                    sharing_type: r.sharing_type || "Double Sharing",
+                                    address: r.address || ""
+                                  });
+                                }
+                              }} 
                               className="font-bold text-blue-600 hover:underline flex items-center gap-2 text-left"
                             >
                               {r.name}
@@ -186,11 +228,11 @@ export default function AdminDashboard() {
                               <span className="block text-xs font-normal text-slate-500">{r.email}</span>
                             </button>
                           </td>
-                          {/* Room Edit */}
+                          {/* Room Quick Edit */}
                           <td className="py-4">
                             <input type="text" defaultValue={r.room || ""} onBlur={(e) => handleUpdateResident(r.id, { room: e.target.value }, r.email, r.name)} className="w-20 p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Room"/>
                           </td>
-                          {/* Fee Edit */}
+                          {/* Fee Quick Edit */}
                           <td className="py-4">
                             <div className="flex items-center gap-1">
                               <DollarSign className="w-4 h-4 text-slate-400"/>
@@ -232,35 +274,73 @@ export default function AdminDashboard() {
                           </td>
                         </tr>
 
-                        {/* EXPANDED RESIDENT DATA & PDF SAVE BUTTON */}
+                        {/* EXPANDED & FULLY EDITABLE RESIDENT DATA */}
                         {isExpanded && (
                           <tr key={`${r.id}-expanded`} className="bg-slate-50/80">
                             <td colSpan={5} className="p-6">
-                              <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
+                              <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xl space-y-6">
                                 <div className="flex justify-between items-center border-b border-slate-100 pb-4">
                                   <div>
-                                    <h3 className="text-lg font-black text-slate-900">Resident Master Profile</h3>
-                                    <p className="text-xs text-slate-400">Complete verified records for {r.name}</p>
+                                    <h3 className="text-xl font-black text-slate-900">Edit Resident Master Profile</h3>
+                                    <p className="text-xs text-slate-400">Modify any details below. Changes sync instantly to the student's dashboard.</p>
                                   </div>
-                                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${r.fee_status === 'paid' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                                    {r.fee_status === 'paid' ? `Paid till ${r.paid_till || 'Next Month'}` : 'Payment Due'}
-                                  </span>
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-xs font-bold text-slate-500">Admission Date: <strong className="text-blue-600">{admissionDate}</strong></span>
+                                  </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
-                                  <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Full Name</span><span className="font-bold text-slate-900">{r.name}</span></div>
-                                  <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Email Address</span><span className="font-bold text-slate-900">{r.email}</span></div>
-                                  <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Phone Number</span><span className="font-bold text-slate-900">{r.phone || "—"}</span></div>
-                                  <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Parent's Phone</span><span className="font-bold text-slate-900">{r.parent_phone || "—"}</span></div>
-                                  <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Date of Birth</span><span className="font-bold text-slate-900">{r.dob || "—"}</span></div>
-                                  <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Room Number</span><span className="font-bold text-blue-600">{r.room || "Unassigned"}</span></div>
-                                  <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Monthly Fee</span><span className="font-bold text-slate-900">₹{r.monthly_fee || "N/A"}</span></div>
-                                  <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Date of Admission</span><span className="font-bold text-blue-600">{admissionDate}</span></div>
-                                  <div className="md:col-span-2 lg:col-span-4"><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Permanent Address</span><span className="font-bold text-slate-900">{r.address || "—"}</span></div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                  <div>
+                                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Full Name</label>
+                                    <input type="text" value={editFormData.name || ""} onChange={(e) => setEditFormData({...editFormData, name: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Email Address</label>
+                                    <input type="email" value={editFormData.email || ""} onChange={(e) => setEditFormData({...editFormData, email: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Phone Number</label>
+                                    <input type="text" value={editFormData.phone || ""} onChange={(e) => setEditFormData({...editFormData, phone: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Parent's Phone</label>
+                                    <input type="text" value={editFormData.parent_phone || ""} onChange={(e) => setEditFormData({...editFormData, parent_phone: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Date of Birth</label>
+                                    <input type="text" value={editFormData.dob || ""} onChange={(e) => setEditFormData({...editFormData, dob: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Gov ID</label>
+                                    <input type="text" value={editFormData.aadhaar || ""} onChange={(e) => setEditFormData({...editFormData, aadhaar: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Room Number</label>
+                                    <input type="text" value={editFormData.room || ""} onChange={(e) => setEditFormData({...editFormData, room: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Monthly Fee (₹)</label>
+                                    <input type="number" value={editFormData.monthly_fee || ""} onChange={(e) => setEditFormData({...editFormData, monthly_fee: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Sharing Type</label>
+                                    <input type="text" value={editFormData.sharing_type || ""} onChange={(e) => setEditFormData({...editFormData, sharing_type: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
+                                  </div>
+                                  <div className="md:col-span-2 lg:col-span-3">
+                                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Permanent Address</label>
+                                    <textarea rows={2} value={editFormData.address || ""} onChange={(e) => setEditFormData({...editFormData, address: e.target.value})} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                                  </div>
                                 </div>
 
-                                {/* SAVE AS PDF / PRINT BUTTON AT THE BOTTOM */}
-                                <div className="pt-4 border-t border-slate-100 flex justify-end">
+                                <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
+                                  <button 
+                                    onClick={() => handleSaveFullProfile(r.id, r.email)} 
+                                    disabled={savingProfile}
+                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-xs transition-all shadow-md disabled:opacity-50"
+                                  >
+                                    {savingProfile ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>} Save Profile Changes
+                                  </button>
+
                                   <button 
                                     onClick={() => window.print()} 
                                     className="flex items-center gap-2 bg-slate-900 hover:bg-black text-white px-6 py-3 rounded-xl font-bold text-xs transition-all shadow-md"
