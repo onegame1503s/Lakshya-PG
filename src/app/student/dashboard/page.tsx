@@ -226,7 +226,7 @@ export default function StudentDashboard() {
                   <div><p className="text-xs font-bold text-slate-400 uppercase">Warden</p><p className="font-bold text-slate-900 text-sm">Front Desk</p></div>
                 </div>
                 {/* ⚠️ CHANGE THE PHONE NUMBER HERE */}
-                <a href="tel:+919876543210" className="text-xs font-bold bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-800 transition-colors">Call Now</a>
+                <a href="tel:+91 9927935759" className="text-xs font-bold bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-800 transition-colors">Call Now</a>
               </div>
 
             </motion.div>
