@@ -116,6 +116,30 @@ export default function AdminDashboard() {
     else alert("Failed to approve application");
   };
 
+  const handleDeleteResident = async (id: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to permanently delete ${name} and all associated contact records? This cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/admins/residents", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert("Resident record deleted successfully.");
+        setExpandedResidentId(null);
+        fetchData();
+      } else {
+        alert("Failed to delete: " + (data.error || "Unknown error"));
+      }
+    } catch (err: any) {
+      alert("Network error: " + err.message);
+    }
+  };
+
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setManualSubmitting(true);
@@ -359,12 +383,18 @@ export default function AdminDashboard() {
                                   </div>
                                 </div>
 
-                                <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
-                                  <button onClick={() => handleSaveFullProfile(r.id, r.email)} disabled={savingProfile} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-xs transition-all shadow-md disabled:opacity-50">
-                                    {savingProfile ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>} Save Profile Changes
-                                  </button>
-                                  <button onClick={() => window.print()} className="flex items-center gap-2 bg-slate-900 hover:bg-black text-white px-6 py-3 rounded-xl font-bold text-xs transition-all shadow-md">
-                                    <Printer className="w-4 h-4" /> Save as PDF / Print Record
+                                <div className="pt-4 border-t border-slate-100 flex flex-wrap justify-between items-center gap-4">
+                                  <div className="flex items-center gap-3">
+                                    <button onClick={() => handleSaveFullProfile(r.id, r.email)} disabled={savingProfile} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-xs transition-all shadow-md disabled:opacity-50">
+                                      {savingProfile ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>} Save Profile Changes
+                                    </button>
+                                    <button onClick={() => window.print()} className="flex items-center gap-2 bg-slate-900 hover:bg-black text-white px-6 py-3 rounded-xl font-bold text-xs transition-all shadow-md">
+                                      <Printer className="w-4 h-4" /> Save as PDF / Print Record
+                                    </button>
+                                  </div>
+                                  
+                                  <button onClick={() => handleDeleteResident(r.id, r.name)} className="flex items-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-6 py-3 rounded-xl font-bold text-xs transition-all">
+                                    Remove Resident & Delete Record
                                   </button>
                                 </div>
                               </div>
