@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { Shield, Users, UserPlus, CheckCircle, XCircle, LogOut, Loader2, DollarSign, Calendar, Home, Mail, Plus, Printer, ChevronDown, ChevronUp, Save } from "lucide-react";
+import { Shield, Users, UserPlus, CheckCircle, LogOut, Loader2, DollarSign, Calendar, Mail, Plus, Printer, ChevronDown, ChevronUp, Save } from "lucide-react";
 
 export default function AdminDashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -21,9 +21,18 @@ export default function AdminDashboard() {
 
   const router = useRouter();
 
-  // Manual Add Form State
+  // Manual Add Form State (All 9 requested fields - optional/blank allowed)
   const [manualForm, setManualForm] = useState({
-    name: "", email: "", phone: "", parent_phone: "", dob: "", aadhaar: "", address: "", room: "", sharing_type: "Double Sharing", monthly_fee: "8500"
+    name: "", 
+    email: "", 
+    phone: "", 
+    parent_phone: "", 
+    dob: "", 
+    aadhaar: "", 
+    room: "", 
+    monthly_fee: "8500", 
+    address: "",
+    sharing_type: "Double Sharing"
   });
   const [manualSubmitting, setManualSubmitting] = useState(false);
 
@@ -59,7 +68,7 @@ export default function AdminDashboard() {
     if (adminData.success) setAdminsList(adminData.admins);
   };
 
-  const handleUpdateResident = async (id: string, updates: any, email: string, name: string) => {
+  const handleUpdateResidentQuick = async (id: string, updates: any, email: string, name: string) => {
     try {
       const res = await fetch("/api/admins/residents", {
         method: "PATCH",
@@ -112,38 +121,47 @@ export default function AdminDashboard() {
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setManualSubmitting(true);
-    const res = await fetch("/api/admins/manual-add", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(manualForm)
-    });
-    const data = await res.json();
-    setManualSubmitting(false);
-    if (data.success) {
-      alert("Student added successfully!");
-      setManualForm({ name: "", email: "", phone: "", parent_phone: "", dob: "", aadhaar: "", address: "", room: "", sharing_type: "Double Sharing", monthly_fee: "8500" });
-      fetchData();
-      setActiveTab("residents");
-    } else {
-      alert("Error: " + data.error);
+    try {
+      const res = await fetch("/api/admins/manual-add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(manualForm)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert("Student successfully onboarded and saved to database!");
+        setManualForm({ name: "", email: "", phone: "", parent_phone: "", dob: "", aadhaar: "", room: "", monthly_fee: "8500", address: "", sharing_type: "Double Sharing" });
+        fetchData();
+        setActiveTab("residents");
+      } else {
+        alert("Error: " + (data.error || "Failed to add student"));
+      }
+    } catch (err: any) {
+      alert("Network error: " + err.message);
+    } finally {
+      setManualSubmitting(false);
     }
   };
 
   const handleAddAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAdminEmail) return;
-    const res = await fetch("/api/admins/manage", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: newAdminEmail })
-    });
-    const data = await res.json();
-    if (data.success) {
-      alert("New admin added successfully!");
-      setNewAdminEmail("");
-      fetchData();
-    } else {
-      alert("Error: " + data.error);
+    try {
+      const res = await fetch("/api/admins/manage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: newAdminEmail })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert("New admin added successfully!");
+        setNewAdminEmail("");
+        fetchData();
+      } else {
+        alert("Error: " + (data.error || "Failed to add admin"));
+      }
+    } catch (err: any) {
+      alert("Network error: " + err.message);
     }
   };
 
@@ -177,7 +195,7 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-100 overflow-hidden">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-slate-900">Active Residents List</h2>
-              <p className="text-xs text-slate-400 font-medium">Click on any resident's name to expand, fully edit records, or print PDF</p>
+              <p className="text-xs text-slate-400 font-medium">Click on any resident's name to expand, fully edit records, or save as PDF</p>
             </div>
             
             <div className="overflow-x-auto">
@@ -230,20 +248,20 @@ export default function AdminDashboard() {
                           </td>
                           {/* Room Quick Edit */}
                           <td className="py-4">
-                            <input type="text" defaultValue={r.room || ""} onBlur={(e) => handleUpdateResident(r.id, { room: e.target.value }, r.email, r.name)} className="w-20 p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Room"/>
+                            <input type="text" defaultValue={r.room || ""} onBlur={(e) => handleUpdateResidentQuick(r.id, { room: e.target.value }, r.email, r.name)} className="w-20 p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Room"/>
                           </td>
                           {/* Fee Quick Edit */}
                           <td className="py-4">
                             <div className="flex items-center gap-1">
                               <DollarSign className="w-4 h-4 text-slate-400"/>
-                              <input type="number" defaultValue={r.monthly_fee} onBlur={(e) => handleUpdateResident(r.id, { monthly_fee: e.target.value }, r.email, r.name)} className="w-28 p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
+                              <input type="number" defaultValue={r.monthly_fee} onBlur={(e) => handleUpdateResidentQuick(r.id, { monthly_fee: e.target.value }, r.email, r.name)} className="w-28 p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"/>
                             </div>
                           </td>
                           {/* Due Date Edit */}
                           <td className="py-4">
                             <div className="flex items-center gap-1">
                               <Calendar className="w-4 h-4 text-slate-400"/>
-                              <select defaultValue={r.rent_due_day || 5} onChange={(e) => handleUpdateResident(r.id, { rent_due_day: parseInt(e.target.value) }, r.email, r.name)} className="p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none">
+                              <select defaultValue={r.rent_due_day || 5} onChange={(e) => handleUpdateResidentQuick(r.id, { rent_due_day: parseInt(e.target.value) }, r.email, r.name)} className="p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none">
                                 {[...Array(31)].map((_, i) => <option key={i+1} value={i+1}>{i+1}th</option>)}
                               </select>
                             </div>
@@ -265,7 +283,7 @@ export default function AdminDashboard() {
                                 const newStatus = r.fee_status === 'paid' ? 'unpaid' : 'paid';
                                 const newPaidTill = newStatus === 'paid' ? paidTillString : null;
 
-                                handleUpdateResident(r.id, { fee_status: newStatus, paid_till: newPaidTill }, r.email, r.name);
+                                handleUpdateResidentQuick(r.id, { fee_status: newStatus, paid_till: newPaidTill }, r.email, r.name);
                               }} 
                               className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm ${r.fee_status === 'paid' ? 'bg-emerald-500 text-white hover:bg-emerald-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
                             >
@@ -383,29 +401,29 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* 3. MANUALLY ADD STUDENT TAB */}
+        {/* 3. MANUALLY ADD STUDENT TAB (ALL 9 FIELDS, OPTIONAL BLANK SPACES ALLOWED) */}
         {activeTab === "manual" && (
           <div className="bg-white rounded-3xl p-8 shadow-xl border border-slate-100 max-w-3xl mx-auto">
             <h2 className="text-2xl font-bold text-slate-900 mb-2">Manually Add Resident</h2>
-            <p className="text-sm text-slate-500 mb-8">Directly onboard a resident into the system without an application.</p>
+            <p className="text-sm text-slate-500 mb-8">Directly onboard a resident into the system. You can leave non-required spaces blank if needed.</p>
             
             <form onSubmit={handleManualSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Full Name</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Full Name *</label>
                   <input type="text" required placeholder="John Doe" value={manualForm.name} onChange={(e) => setManualForm({...manualForm, name: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Email Address</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Email Address *</label>
                   <input type="email" required placeholder="john@example.com" value={manualForm.email} onChange={(e) => setManualForm({...manualForm, email: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Phone Number</label>
-                  <input type="text" required placeholder="9876543210" value={manualForm.phone} onChange={(e) => setManualForm({...manualForm, phone: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
+                  <input type="text" placeholder="9876543210" value={manualForm.phone} onChange={(e) => setManualForm({...manualForm, phone: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Parent's Phone</label>
-                  <input type="text" required placeholder="9876543210" value={manualForm.parent_phone} onChange={(e) => setManualForm({...manualForm, parent_phone: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
+                  <input type="text" placeholder="9876543210" value={manualForm.parent_phone} onChange={(e) => setManualForm({...manualForm, parent_phone: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Date of Birth</label>
@@ -413,7 +431,7 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Gov ID</label>
-                  <input type="text" placeholder="XXXX XXXX XXXX" value={manualForm.aadhaar} onChange={(e) => setManualForm({...manualForm, aadhaar: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
+                  <input type="text" placeholder="ID Number" value={manualForm.aadhaar} onChange={(e) => setManualForm({...manualForm, aadhaar: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Room Number</label>
@@ -421,7 +439,7 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Monthly Fee (₹)</label>
-                  <input type="number" required value={manualForm.monthly_fee} onChange={(e) => setManualForm({...manualForm, monthly_fee: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
+                  <input type="number" value={manualForm.monthly_fee} onChange={(e) => setManualForm({...manualForm, monthly_fee: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"/>
                 </div>
               </div>
               <div>
@@ -429,7 +447,7 @@ export default function AdminDashboard() {
                 <textarea rows={3} placeholder="Full home address..." value={manualForm.address} onChange={(e) => setManualForm({...manualForm, address: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600 resize-none"></textarea>
               </div>
               <button type="submit" disabled={manualSubmitting} className="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl hover:bg-black transition-colors shadow-xl flex justify-center items-center">
-                {manualSubmitting ? <Loader2 className="w-5 h-5 animate-spin"/> : "Onboard Resident"}
+                {manualSubmitting ? <Loader2 className="w-5 h-5 animate-spin"/> : "Onboard Resident & Save"}
               </button>
             </form>
           </div>

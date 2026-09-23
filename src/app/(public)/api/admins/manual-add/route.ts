@@ -1,38 +1,54 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: Request) {
   try {
-    const data = await req.json();
+    const body = await req.json();
+    const { 
+      name, 
+      email, 
+      phone, 
+      parent_phone, 
+      dob, 
+      aadhaar, 
+      room, 
+      monthly_fee, 
+      address, 
+      sharing_type 
+    } = body;
 
-    // Only these 4 are strictly mandatory for the admin
-    if (!data.name || !data.email || !data.room || !data.monthlyFee) {
-      return NextResponse.json({ success: false, error: "Name, Email, Room, and Fee are mandatory." }, { status: 400 });
+    if (!name || !email) {
+      return NextResponse.json({ success: false, error: "Full Name and Email Address are required." }, { status: 400 });
     }
 
-    const payload = {
-      name: data.name,
-      email: data.email,
-      room: data.room,
-      monthly_fee: data.monthlyFee,
-      sharing_type: data.sharingType || "Double Sharing",
-      dob: data.dob || null,
-      father_name: data.fatherName || null,
-      mother_name: data.motherName || null,
-      phone: data.phone || null,
-      parent_phone: data.parentPhone || null,
-      aadhaar: data.aadhaar || null,
-      coaching: data.coaching || null,
-      address: data.address || null,
-      disease: data.disease || null,
-      status: "approved" // Skips the queue, goes straight to resident!
+    const newStudent = {
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone ? phone.trim() : null,
+      parent_phone: parent_phone ? parent_phone.trim() : null,
+      dob: dob ? dob.trim() : null,
+      aadhaar: aadhaar ? aadhaar.trim() : null,
+      room: room ? room.trim() : null,
+      monthly_fee: monthly_fee ? Number(monthly_fee) : 8500,
+      address: address ? address.trim() : null,
+      sharing_type: sharing_type || "Double Sharing",
+      status: "approved",
+      fee_status: "unpaid",
+      rent_due_day: 5,
+      admission_date: new Date().toISOString()
     };
 
-    const { error } = await supabase.from("students").insert([payload]);
-    if (error) throw error;
+    const { error } = await supabase.from("students").insert([newStudent]);
+    if (error) {
+      console.error("Supabase Manual Insert Error:", error);
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    console.error("Manual Add API Error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
