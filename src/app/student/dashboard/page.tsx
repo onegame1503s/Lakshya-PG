@@ -24,7 +24,8 @@ export default function StudentDashboard() {
       const email = localStorage.getItem("userEmail");
       if (!email) return router.push("/student/login");
       try {
-        const res = await fetch("/api/student/profile", {
+        // FIXED THIS LINE: Changed from "/api/student/profile" to "/student/profile"
+        const res = await fetch("/student/profile", {
           method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }),
         });
         const data = await res.json();
@@ -84,6 +85,7 @@ export default function StudentDashboard() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
       <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
       <h2 className="text-2xl font-bold text-slate-900 mb-2">Access Denied</h2>
+      <p className="text-slate-500 mb-8">{error || "Your account has not been approved yet."}</p>
       <button onClick={handleLogout} className="bg-slate-900 text-white font-bold py-3 px-8 rounded-xl hover:bg-slate-800">Return to Login</button>
     </div>
   );
